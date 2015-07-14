@@ -721,29 +721,3 @@
 (send hueWindow show #t)
 (send statusWindow show #t)
 (send allLights show #t)
-
-; Will Need
-
-;(define-values (httpStatus httpHeader jsonResponse) (http-sendrecv
-; bridgeAddress "/api/brucelighting/lights/1/state"
-; #:method 'PUT
-; #:data
-; (jsexpr->string 
-;  (hash 'on #t
-;        'transitiontime 50
-;        'bri 250
-;        'ct 300)) 
-; #:headers
-; '("Content-Type: application/json")
-; #:content-decode '(json)))
-;
-;(define-values (httpStatus httpHeader jsonResponse) (http-sendrecv
-; bridgeAddress "/api/brucelighting/lights/"
-; #:method 'GET
-; #:headers
-; '("Content-Type: application/json")
-; #:content-decode '(json)))
-;
-;(define bridgeResponse (read-json jsonResponse))
-
-;(goCue (lightList) lightingState cueTime)
