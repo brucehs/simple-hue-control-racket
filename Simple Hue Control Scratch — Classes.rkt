@@ -41,9 +41,9 @@
                   (append (get-field children parentList) (list this)))
       (set-field! parent this parentList))))
 
-(define newList (new cueList% [label "Test List"]))
-(define newCueOne (new cue% [label "Test Cue 1"]))
-(define newCueTwo (new cue% [label "Test Cue 2"]))
+;(define newList (new cueList% [label "Test List"]))
+;(define newCueOne (new cue% [label "Test Cue 1"]))
+;(define newCueTwo (new cue% [label "Test Cue 2"]))
 
 ;Example of getting state from json
 
