@@ -53,6 +53,10 @@
                   (append (get-field children parentList) (list this)))
       (set-field! parent this parentList))))
 
+; Hack for Workshop: Create a main Cue List.
+
+(define mainList (new cueList% [label "Main List"]))
+
 ; Creating the procedures we will need.
 
 ; First is getting the lights we need to cue.
