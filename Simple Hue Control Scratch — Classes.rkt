@@ -1,12 +1,14 @@
 #lang racket
 
-(define cueLists%
+(define cueList%
   (class object%
     (super-new)
     (init-field [label ""])
-    (define/public (get-label) label)))
+    (init-field [children '()])
+    (define/public (get-label) label)
+    (define/public (get-children) children)))
 
-(define cues%
+(define cue%
   (class object%
     (super-new)
     (define stateJson     (hash
@@ -26,9 +28,18 @@
                                     'name "Generic Name"
                                     'modelid "LCT001"
                                     'swversion "")])
+    (init-field [parent '(object:cueList%)])
     (define/public (get-label) label)
+    (define/public (get-parent) parent)
     (define/public (get-json) jsonResponse)
     (define/public (set-label newLabel)
       (set-field! label this newLabel))
     (define/public (set-json newJson)
-      (set-field! jsonResponse this newJson))))
+      (set-field! jsonResponse this newJson))
+    (define/public (set-parent parentList)
+      (set-field! children parentList 
+                  (append (get-field children parentList) (list this))))))
+
+(define newList (new cueList% [label "Test List"]))
+(define newCueOne (new cue% [label "Test Cue 1"]))
+(define newCueTwo (new cue% [label "Test Cue 2"]))
