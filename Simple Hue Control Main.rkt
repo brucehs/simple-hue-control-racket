@@ -86,8 +86,8 @@
          (proc lst))))
 
 (define lightList
-    (lambda ()
-      (getHuesToCue huesToCue lightsToCue)))
+  (lambda ()
+    (getHuesToCue huesToCue lightsToCue)))
 
 ; Next is getting the lighting state for the cue.
 (define lightingState '(0 1 0 0))
@@ -140,27 +140,27 @@
     (send lastLightsDisplay set-label lastLightsMessage)))
 
 (define updateOn
-    (lambda (state)
-      (cond
-        ((= (list-ref state 0) 0) (set! lastOnMessage "On?: TRUE"))
-        ((= (list-ref state 0) 1) (set! lastOnMessage "On?: FALSE"))
-        (else (set! lastOnMessage "On? ")))
-      (send lastOnDisplay set-label lastOnMessage)))
+  (lambda (state)
+    (cond
+      ((= (list-ref state 0) 0) (set! lastOnMessage "On?: TRUE"))
+      ((= (list-ref state 0) 1) (set! lastOnMessage "On?: FALSE"))
+      (else (set! lastOnMessage "On? ")))
+    (send lastOnDisplay set-label lastOnMessage)))
 
 (define updateBri
-    (lambda (state)
-      (set! lastBriMessage (string-append "Intensity: " (number->string (list-ref state 1))))
-      (send lastBriDisplay set-label lastBriMessage)))
+  (lambda (state)
+    (set! lastBriMessage (string-append "Intensity: " (number->string (list-ref state 1))))
+    (send lastBriDisplay set-label lastBriMessage)))
 
 (define updateHue
-    (lambda (state)
-      (set! lastHueMessage (string-append "Hue: " (number->string (list-ref state 2))))
-      (send lastHueDisplay set-label lastHueMessage)))
+  (lambda (state)
+    (set! lastHueMessage (string-append "Hue: " (number->string (list-ref state 2))))
+    (send lastHueDisplay set-label lastHueMessage)))
 
 (define updateSat
-    (lambda (state)
-      (set! lastSatMessage (string-append "Saturation: " (number->string (list-ref state 3))))
-      (send lastSatDisplay set-label lastSatMessage)))
+  (lambda (state)
+    (set! lastSatMessage (string-append "Saturation: " (number->string (list-ref state 3))))
+    (send lastSatDisplay set-label lastSatMessage)))
 
 (define updateLastTransitiontime
   (lambda (time)
@@ -271,36 +271,36 @@
               (string-append initialSatMessage 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'sat)))))
-             ((and (>= i 9) (<= i 16))
-              (cond
-                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
-                 (send 
-                  (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
-                  set-label 
-                  (string-append initialOnMessage "T")))
-                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
-                 (send 
-                  (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
-                  set-label 
-                  (string-append initialOnMessage "F"))))
-              (send 
-               (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 1) 
-               set-label 
-               (string-append initialBriMessage 
-                              (number->string 
-                               (hash-ref (hash-ref lightState 'state) 'bri))))
-              (send 
-               (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 2) 
-               set-label 
-               (string-append initialHueMessage 
-                              (number->string 
-                               (hash-ref (hash-ref lightState 'state) 'hue))))
-              (send 
-               (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 3) 
-               set-label 
-               (string-append initialSatMessage 
-                              (number->string 
-                               (hash-ref (hash-ref lightState 'state) 'sat)))))))))))
+            ((and (>= i 9) (<= i 16))
+             (cond
+               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
+                (send 
+                 (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
+                 set-label 
+                 (string-append initialOnMessage "T")))
+               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
+                (send 
+                 (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
+                 set-label 
+                 (string-append initialOnMessage "F"))))
+             (send 
+              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 1) 
+              set-label 
+              (string-append initialBriMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'bri))))
+             (send 
+              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 2) 
+              set-label 
+              (string-append initialHueMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'hue))))
+             (send 
+              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 3) 
+              set-label 
+              (string-append initialSatMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'sat)))))))))))
 
 ; Now it is time to create a window.
 
@@ -326,19 +326,19 @@
                                      [spacing 3]))
 
 (define lightsSelectPanelButtons (new horizontal-panel% [parent lightsSelect]
-                                     [alignment '(center center)]
-                                     [border 4]
-                                     [spacing 3]))
+                                      [alignment '(center center)]
+                                      [border 4]
+                                      [spacing 3]))
 
 (define lightsSelectPanelAccessButtons (new horizontal-panel% [parent lightsSelectPanelButtons]
-                                     [alignment '(left center)]
-                                     [border 4]
-                                     [spacing 3]))
+                                            [alignment '(left center)]
+                                            [border 4]
+                                            [spacing 3]))
 
 (define lightsSelectPanelSelectButton (new horizontal-panel% [parent lightsSelectPanelButtons]
-                                     [alignment '(right center)]
-                                     [border 4]
-                                     [spacing 3]))
+                                           [alignment '(right center)]
+                                           [border 4]
+                                           [spacing 3]))
 
 ; Create some check boxes to select lights
 (for ([i (in-range 1 9)])
@@ -358,20 +358,20 @@
                                                                (send lightsSelectPanelBottom get-children))))]))
 
 (define lightsClearButton (new button% [parent lightsSelectPanelAccessButtons]
-                                 [label "Clear"]
-                                 [callback (lambda (button event)
-                                             (for ([i (in-range 8)])
-                                               (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #f))
-                                             (for ([i (in-range 8)])
-                                               (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #f)))]))
+                               [label "Clear"]
+                               [callback (lambda (button event)
+                                           (for ([i (in-range 8)])
+                                             (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #f))
+                                           (for ([i (in-range 8)])
+                                             (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #f)))]))
 
 (define lightsSelectAllButton (new button% [parent lightsSelectPanelAccessButtons]
-                                 [label "Select All"]
-                                 [callback (lambda (button event)
-                                             (for ([i (in-range 8)])
-                                               (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #t))
-                                             (for ([i (in-range 8)])
-                                               (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #t)))]))
+                                   [label "Select All"]
+                                   [callback (lambda (button event)
+                                               (for ([i (in-range 8)])
+                                                 (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #t))
+                                               (for ([i (in-range 8)])
+                                                 (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #t)))]))
 
 ; Next is Setting the Attributes
 (define lightsAttributes (new vertical-panel% [parent hueWindow]
@@ -439,11 +439,21 @@
 
 ; Now we need to send the cue to the bridge.
 
-(define cueGoPanel (new horizontal-panel% [parent hueWindow]
-                        [style '(border)]
-                        [alignment '(right center)]))
+(define cueGoAndSavePanel (new horizontal-panel% [parent hueWindow]
+                               [style '(border)]
+                               [alignment '(center center)]))
+
+(define cueSavePanel (new horizontal-panel% [parent cueGoAndSavePanel]
+                        [alignment '(left center)]))
 
 ; The following needs a callback procedure.
+(define cueSaveButton (new button% [parent cueSavePanel]
+                         [label "Save"]
+                         [min-height 50]))
+
+(define cueGoPanel (new horizontal-panel% [parent cueGoAndSavePanel]
+                        [alignment '(right center)]))
+
 (define cueGoButton (new button% [parent cueGoPanel]
                          [label "GO!"]
                          [min-height 50]
@@ -468,29 +478,29 @@
                                [auto-resize #t]))
 
 (define lastOnDisplay (new message% [parent lastLightsGroup]
-                              [label lastOnMessage]
-                              [auto-resize #t]))
+                           [label lastOnMessage]
+                           [auto-resize #t]))
 
 (define lastBriDisplay (new message% [parent lastLightsGroup]
-                              [label lastBriMessage]
-                              [auto-resize #t]))
+                            [label lastBriMessage]
+                            [auto-resize #t]))
 
 (define lastHueDisplay (new message% [parent lastLightsGroup]
-                              [label lastHueMessage]
-                              [auto-resize #t]))
+                            [label lastHueMessage]
+                            [auto-resize #t]))
 
 (define lastSatDisplay (new message% [parent lastLightsGroup]
-                              [label lastSatMessage]
-                              [auto-resize #t]))
+                            [label lastSatMessage]
+                            [auto-resize #t]))
 
 (define lastTransitiontimeDisplay (new message% [parent lastLightsGroup]
-                              [label lastTransitiontimeMessage]
-                              [auto-resize #t]))
+                                       [label lastTransitiontimeMessage]
+                                       [auto-resize #t]))
 
 ; Finally we need a window to show the status of all the lights
 
 (define allLights (new frame% [label "All Lights"]
-                          [min-width 1000]))
+                       [min-width 1000]))
 
 (define initialOnMessage "On?: ")
 (define initialBriMessage "Bri: ")
@@ -500,163 +510,163 @@
 ; The first eight lights
 
 (define lights1To8 (new horizontal-panel% [parent allLights]
-                          [alignment '(left top)]))
+                        [alignment '(left top)]))
 
 (define light1 (new group-box-panel% [parent lights1To8]
-                      [label "LX 1"]
-                      [alignment '(left top)]))
+                    [label "LX 1"]
+                    [alignment '(left top)]))
 (define light1On (new message% [parent light1]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light1Bri (new message% [parent light1]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light1Hue (new message% [parent light1]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light1Sat (new message% [parent light1]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light2 (new group-box-panel% [parent lights1To8]
-                      [label "LX 2"]
-                      [alignment '(left top)]))
+                    [label "LX 2"]
+                    [alignment '(left top)]))
 (define light2On (new message% [parent light2]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light2Bri (new message% [parent light2]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light2Hue (new message% [parent light2]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light2Sat (new message% [parent light2]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light3 (new group-box-panel% [parent lights1To8]
-                      [label "LX 3"]
-                      [alignment '(left top)]))
+                    [label "LX 3"]
+                    [alignment '(left top)]))
 (define light3On (new message% [parent light3]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light3Bri (new message% [parent light3]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light3Hue (new message% [parent light3]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light3Sat (new message% [parent light3]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light4 (new group-box-panel% [parent lights1To8]
-                      [label "LX 4"]
-                      [alignment '(left top)]))
+                    [label "LX 4"]
+                    [alignment '(left top)]))
 (define light4On (new message% [parent light4]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light4Bri (new message% [parent light4]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light4Hue (new message% [parent light4]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light4Sat (new message% [parent light4]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light5 (new group-box-panel% [parent lights1To8]
-                      [label "LX 5"]
-                      [alignment '(left top)]))
+                    [label "LX 5"]
+                    [alignment '(left top)]))
 (define light5On (new message% [parent light5]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light5Bri (new message% [parent light5]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light5Hue (new message% [parent light5]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light5Sat (new message% [parent light5]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light6 (new group-box-panel% [parent lights1To8]
-                      [label "LX 6"]
-                      [alignment '(left top)]))
+                    [label "LX 6"]
+                    [alignment '(left top)]))
 (define light6On (new message% [parent light6]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light6Bri (new message% [parent light6]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light6Hue (new message% [parent light6]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light6Sat (new message% [parent light6]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light7 (new group-box-panel% [parent lights1To8]
-                      [label "LX 7"]
-                      [alignment '(left top)]))
+                    [label "LX 7"]
+                    [alignment '(left top)]))
 (define light7On (new message% [parent light7]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light7Bri (new message% [parent light7]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light7Hue (new message% [parent light7]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light7Sat (new message% [parent light7]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light8 (new group-box-panel% [parent lights1To8]
-                      [label "LX 8"]
-                      [alignment '(left top)]))
+                    [label "LX 8"]
+                    [alignment '(left top)]))
 (define light8On (new message% [parent light8]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light8Bri (new message% [parent light8]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light8Hue (new message% [parent light8]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light8Sat (new message% [parent light8]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 ; The next eight lights
 
 (define lights9To16 (new horizontal-panel% [parent allLights]
-                          [alignment '(left top)]))
+                         [alignment '(left top)]))
 
 (define light9 (new group-box-panel% [parent lights9To16]
-                      [label "LX 9"]
-                      [alignment '(left top)]))
+                    [label "LX 9"]
+                    [alignment '(left top)]))
 (define light9On (new message% [parent light9]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                      [label initialOnMessage]
+                      [auto-resize #t]))
 (define light9Bri (new message% [parent light9]
-                        [label initialBriMessage]
-                        [auto-resize #t]))
+                       [label initialBriMessage]
+                       [auto-resize #t]))
 (define light9Hue (new message% [parent light9]
-                        [label initialHueMessage]
-                        [auto-resize #t]))
+                       [label initialHueMessage]
+                       [auto-resize #t]))
 (define light9Sat (new message% [parent light9]
-                        [label initialSatMessage]
-                        [auto-resize #t]))
+                       [label initialSatMessage]
+                       [auto-resize #t]))
 
 (define light10 (new group-box-panel% [parent lights9To16]
-                      [label "LX 10"]
-                      [alignment '(left top)]))
+                     [label "LX 10"]
+                     [alignment '(left top)]))
 (define light10On (new message% [parent light10]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                       [label initialOnMessage]
+                       [auto-resize #t]))
 (define light10Bri (new message% [parent light10]
                         [label initialBriMessage]
                         [auto-resize #t]))
@@ -668,11 +678,11 @@
                         [auto-resize #t]))
 
 (define light11 (new group-box-panel% [parent lights9To16]
-                      [label "LX 11"]
-                      [alignment '(left top)]))
+                     [label "LX 11"]
+                     [alignment '(left top)]))
 (define light11On (new message% [parent light11]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                       [label initialOnMessage]
+                       [auto-resize #t]))
 (define light11Bri (new message% [parent light11]
                         [label initialBriMessage]
                         [auto-resize #t]))
@@ -684,11 +694,11 @@
                         [auto-resize #t]))
 
 (define light12 (new group-box-panel% [parent lights9To16]
-                      [label "LX 12"]
-                      [alignment '(left top)]))
+                     [label "LX 12"]
+                     [alignment '(left top)]))
 (define light12On (new message% [parent light12]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                       [label initialOnMessage]
+                       [auto-resize #t]))
 (define light12Bri (new message% [parent light12]
                         [label initialBriMessage]
                         [auto-resize #t]))
@@ -700,11 +710,11 @@
                         [auto-resize #t]))
 
 (define light13 (new group-box-panel% [parent lights9To16]
-                      [label "LX 13"]
-                      [alignment '(left top)]))
+                     [label "LX 13"]
+                     [alignment '(left top)]))
 (define light13On (new message% [parent light13]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                       [label initialOnMessage]
+                       [auto-resize #t]))
 (define light13Bri (new message% [parent light13]
                         [label initialBriMessage]
                         [auto-resize #t]))
@@ -716,11 +726,11 @@
                         [auto-resize #t]))
 
 (define light14 (new group-box-panel% [parent lights9To16]
-                      [label "LX 14"]
-                      [alignment '(left top)]))
+                     [label "LX 14"]
+                     [alignment '(left top)]))
 (define light14On (new message% [parent light14]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                       [label initialOnMessage]
+                       [auto-resize #t]))
 (define light14Bri (new message% [parent light14]
                         [label initialBriMessage]
                         [auto-resize #t]))
@@ -732,11 +742,11 @@
                         [auto-resize #t]))
 
 (define light15 (new group-box-panel% [parent lights9To16]
-                      [label "LX 15"]
-                      [alignment '(left top)]))
+                     [label "LX 15"]
+                     [alignment '(left top)]))
 (define light15On (new message% [parent light15]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                       [label initialOnMessage]
+                       [auto-resize #t]))
 (define light15Bri (new message% [parent light15]
                         [label initialBriMessage]
                         [auto-resize #t]))
@@ -748,11 +758,11 @@
                         [auto-resize #t]))
 
 (define light16 (new group-box-panel% [parent lights9To16]
-                      [label "LX 16"]
-                      [alignment '(left top)]))
+                     [label "LX 16"]
+                     [alignment '(left top)]))
 (define light16On (new message% [parent light16]
-                        [label initialOnMessage]
-                        [auto-resize #t]))
+                       [label initialOnMessage]
+                       [auto-resize #t]))
 (define light16Bri (new message% [parent light16]
                         [label initialBriMessage]
                         [auto-resize #t]))
@@ -763,8 +773,21 @@
                         [label initialSatMessage]
                         [auto-resize #t]))
 
+; Create a Window for the Cue List.
+
+(define cueListWindow (new frame% [label "Main Cue List"]))
+
+(define cueListPanel (new vertical-panel% [parent cueListWindow]
+                          [alignment '(left center)]
+                          [min-width 200]))
+
+(define cueChoice (new choice% [parent cueListPanel]
+                       [label "Cues:"]
+                       [choices '()]))
+
 ; Show the Windows
 
 (send hueWindow show #t)
 (send statusWindow show #t)
 (send allLights show #t)
+(send cueListWindow show #t)
