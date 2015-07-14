@@ -277,6 +277,22 @@
                                      [alignment '(center center)]
                                      [border 4]
                                      [spacing 3]))
+
+(define lightsSelectPanelButtons (new horizontal-panel% [parent lightsSelect]
+                                     [alignment '(center center)]
+                                     [border 4]
+                                     [spacing 3]))
+
+(define lightsSelectPanelAccessButtons (new horizontal-panel% [parent lightsSelectPanelButtons]
+                                     [alignment '(left center)]
+                                     [border 4]
+                                     [spacing 3]))
+
+(define lightsSelectPanelSelectButton (new horizontal-panel% [parent lightsSelectPanelButtons]
+                                     [alignment '(right center)]
+                                     [border 4]
+                                     [spacing 3]))
+
 ; Create some check boxes to select lights
 (for ([i (in-range 1 9)])
   (new check-box% [parent lightsSelectPanelTop]
@@ -287,12 +303,28 @@
        [label (string-append "LX " (string-append (~a i) " "))]
        [value #f]))
 
-(define lightsSelectButton (new button% [parent lightsSelect]
+(define lightsSelectButton (new button% [parent lightsSelectPanelSelectButton]
                                 [label "Lights!"]
                                 [callback (lambda (button event)
                                             (set! lightsToCue (getLights
                                                                (send lightsSelectPanelTop get-children)
                                                                (send lightsSelectPanelBottom get-children))))]))
+
+(define lightsClearButton (new button% [parent lightsSelectPanelAccessButtons]
+                                 [label "Clear"]
+                                 [callback (lambda (button event)
+                                             (for ([i (in-range 8)])
+                                               (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #f))
+                                             (for ([i (in-range 8)])
+                                               (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #f)))]))
+
+(define lightsSelectAllButton (new button% [parent lightsSelectPanelAccessButtons]
+                                 [label "Select All"]
+                                 [callback (lambda (button event)
+                                             (for ([i (in-range 8)])
+                                               (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #t))
+                                             (for ([i (in-range 8)])
+                                               (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #t)))]))
 
 ; Next is Setting the Attributes
 (define lightsAttributes (new vertical-panel% [parent hueWindow]
