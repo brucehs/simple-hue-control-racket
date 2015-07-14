@@ -38,8 +38,16 @@
       (set-field! jsonResponse this newJson))
     (define/public (set-parent parentList)
       (set-field! children parentList 
-                  (append (get-field children parentList) (list this))))))
+                  (append (get-field children parentList) (list this)))
+      (set-field! parent this parentList))))
 
 (define newList (new cueList% [label "Test List"]))
 (define newCueOne (new cue% [label "Test Cue 1"]))
 (define newCueTwo (new cue% [label "Test Cue 2"]))
+
+;Example of getting state from json
+
+;(hash-ref (hash-ref 
+;            (send (list-ref (send newList get-children) 0) get-json) 
+;             'light) 
+;            'on)
