@@ -165,6 +165,7 @@
 (define updateLastTransitiontime
   (lambda (time)
     (cond
+      ((not (number? cueTime)) (set! lastTransitiontimeMessage "Cue Time: N/A"))
       ((= cueTime 0) (set! lastTransitiontimeMessage "Cue Time: 0 seconds"))
       (else (set! lastTransitiontimeMessage (string-append (string-append "Cue Time: " (number->string (/ time 10))) " seconds"))))
     (send lastTransitiontimeDisplay set-label lastTransitiontimeMessage)))
@@ -412,7 +413,10 @@
                               [min-width 10]
                               [stretchable-width 10]))
 
-(define lightsAttributesButton (new button% [parent lightsAttributes]
+(define lightsAttributesButtonPanel (new horizontal-panel% [parent lightsAttributes]
+                                         [alignment '(right center)]))
+
+(define lightsAttributesButton (new button% [parent lightsAttributesButtonPanel]
                                     [label "Lighting State!"]
                                     [callback (lambda (button event)
                                                 (set! lightingState (list 
@@ -435,7 +439,9 @@
                               [label "Set Time!"]
                               [callback (lambda (button event)
                                           (set! cueTime
-                                                (inexact->exact (* (string->number (send cueTimeField get-value)) 10))))]))
+                                                (cond
+                                                  (number? (send cueTimeField get-value))(inexact->exact (* (string->number (send cueTimeField get-value)) 10))
+                                                  (not (number? (send cueTimeField get-value)))(+ 1 0))))]))
 
 ; Now we need to send the cue to the bridge.
 
@@ -444,12 +450,14 @@
                                [alignment '(center center)]))
 
 (define cueSavePanel (new horizontal-panel% [parent cueGoAndSavePanel]
-                        [alignment '(left center)]))
+                          [alignment '(left center)]))
 
 ; The following needs a callback procedure.
 (define cueSaveButton (new button% [parent cueSavePanel]
-                         [label "Save"]
-                         [min-height 50]))
+                           [label "Save"]
+                           [min-height 50]
+                           [callback (lambda (button event)
+                                       (send saveCueDialog show #t))]))
 
 (define cueGoPanel (new horizontal-panel% [parent cueGoAndSavePanel]
                         [alignment '(right center)]))
@@ -773,6 +781,49 @@
                         [label initialSatMessage]
                         [auto-resize #t]))
 
+; Procedures for Saving and Restoring Cues
+
+(define retrieveBridgeStatus
+  (lambda ()
+    (let-values ([(httpStatus httpHeader jsonResponse)
+                  (http-sendrecv
+                   bridgeAddress "/api/brucelighting/lights/"
+                   #:method 'GET
+                   #:headers
+                   '("Content-Type: application/json")
+                   #:content-decode '(json))])
+      (read-json jsonResponse))))
+
+(define getOneJsonState
+  (lambda (cueList cueNumber lightNumber)
+    (hash-ref 
+     (hash-ref 
+      (send 
+       (list-ref (send cueList get-children) (- cueNumber 1)) 
+       get-json) 
+      (string->symbol (number->string lightNumber)))
+     'state)))
+
+(define restoreCue
+  (lambda (cueList cueNumber numberOfLights)
+    (for ([i (in-range 1 numberOfLights)])
+      (let ([lightState (getOneJsonState cueList cueNumber i)])
+        (let-values ([(httpStatus httpHeader jsonResponse)
+                      (http-sendrecv
+                       bridgeAddress (string-append (string-append "/api/brucelighting/lights/" (number->string i)) "/state")
+                       #:method 'PUT
+                       #:data
+                       (jsexpr->string
+                        (hash 'on (hash-ref lightState 'on)
+                              'bri (hash-ref lightState 'bri)
+                              'hue (hash-ref lightState 'hue)
+                              'sat (hash-ref lightState 'sat)
+                              'transitiontime cueTime))
+                       #:headers
+                       '("Content-Type: application/json")
+                       #:content-decode '(json))])
+          (set! bridgeResponse (read-json jsonResponse)))))))
+
 ; Create a Window for the Cue List.
 
 (define cueListWindow (new frame% [label "Main Cue List"]))
@@ -784,6 +835,48 @@
 (define cueChoice (new choice% [parent cueListPanel]
                        [label "Cues:"]
                        [choices '()]))
+
+(define restorePanel (new horizontal-panel% [parent cueListPanel]
+                          [alignment '(right center)]))
+
+(define restoreButton (new button% [parent restorePanel]
+                           [label "Restore"]
+                           [callback (lambda (button event)
+                                       (restoreCue 
+                                        mainList 
+                                        (+ (send cueChoice get-selection) 1) 
+                                        17))]))
+
+; Create A Dialog for Saving Cues.
+
+(define saveCueDialog (new dialog% [parent hueWindow]
+                           [label "Save Cue"]))
+(define saveCueNamePanel (new horizontal-panel% [parent saveCueDialog]
+                              [alignment '(left center)]
+                              [min-width 200]))
+(define saveCueName (new text-field% [parent saveCueNamePanel]
+                         [label "Cue Name:"]))
+
+(define saveCueButtonPanel (new horizontal-panel% [parent saveCueDialog]
+                                [alignment '(right center)]
+                                [min-width 200]))
+; Needs Callback procedure
+(define saveCueOKButton (new button% [parent saveCueButtonPanel]
+                             [label "Save"]
+                             [callback (lambda(button event)
+                                         (let [(newCueName (send saveCueName get-value))]
+                                           (send (new cue% [label newCueName]) set-parent mainList)
+                                           (let [(newCuePosition (- (length (send mainList get-children)) 1))]
+                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus)))
+                                           (send cueChoice append newCueName)
+                                           ;(send saveCueName set-value "")
+                                           (send saveCueDialog show #f)))]))
+
+(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
+                                 [label "Cancel"]
+                                 [callback (lambda (button event)
+                                             ;(send saveCueName set-value "")
+                                             (send saveCueDialog show #f))]))
 
 ; Show the Windows
 
