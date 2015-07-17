@@ -165,7 +165,6 @@
 (define updateLastTransitiontime
   (lambda (time)
     (cond
-      ((not (number? cueTime)) (set! lastTransitiontimeMessage "Cue Time: N/A"))
       ((= cueTime 0) (set! lastTransitiontimeMessage "Cue Time: 0 seconds"))
       (else (set! lastTransitiontimeMessage (string-append (string-append "Cue Time: " (number->string (/ time 10))) " seconds"))))
     (send lastTransitiontimeDisplay set-label lastTransitiontimeMessage)))
@@ -438,10 +437,12 @@
 (define setCueTimeButton (new button% [parent cueTimePanel]
                               [label "Set Time!"]
                               [callback (lambda (button event)
-                                          (set! cueTime
-                                                (cond
-                                                  (number? (send cueTimeField get-value))(inexact->exact (* (string->number (send cueTimeField get-value)) 10))
-                                                  (not (number? (send cueTimeField get-value)))(+ 1 0))))]))
+                                          (cond
+                                            ((not (number? (string->number (send cueTimeField get-value))))
+                                             (set! cueTime 0))
+                                            (else
+                                            (set! cueTime
+                                                  (inexact->exact (* (string->number (send cueTimeField get-value)) 10))))))]))
 
 ; Now we need to send the cue to the bridge.
 
