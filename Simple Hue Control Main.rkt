@@ -870,13 +870,13 @@
                                            (let [(newCuePosition (- (length (send mainList get-children)) 1))]
                                              (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus)))
                                            (send cueChoice append newCueName)
-                                           ;(send saveCueName set-value "")
+                                           (send saveCueName set-value "")
                                            (send saveCueDialog show #f)))]))
 
 (define saveCueCancelButton (new button% [parent saveCueButtonPanel]
                                  [label "Cancel"]
                                  [callback (lambda (button event)
-                                             ;(send saveCueName set-value "")
+                                             (send saveCueName set-value "")
                                              (send saveCueDialog show #f))]))
 
 ; Show the Windows
