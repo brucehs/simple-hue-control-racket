@@ -18,7 +18,9 @@
     (init-field [label ""])
     (init-field [children '()])
     (define/public (get-label) label)
-    (define/public (get-children) children)))
+    (define/public (get-children) children)
+    (define/public (set-children childrenList)
+      (set-field! children this childrenList))))
 
 (define cue%
   (class object%
@@ -441,8 +443,8 @@
                                             ((not (number? (string->number (send cueTimeField get-value))))
                                              (set! cueTime 0))
                                             (else
-                                            (set! cueTime
-                                                  (inexact->exact (* (string->number (send cueTimeField get-value)) 10))))))]))
+                                             (set! cueTime
+                                                   (inexact->exact (* (string->number (send cueTimeField get-value)) 10))))))]))
 
 ; Now we need to send the cue to the bridge.
 
@@ -837,7 +839,27 @@
                        [label "Cues:"]
                        [choices '()]))
 
-(define restorePanel (new horizontal-panel% [parent cueListPanel]
+(define deleteCue
+  (lambda (cueList position)
+    (let-values ([(cueList1 cueList2)
+                  (split-at (send cueList get-children) position)])
+      (send cueList set-children (append cueList1 (drop cueList2 1))))))
+
+(define restoreAndDeletePanel (new horizontal-panel% [parent cueListPanel]
+                                   [alignment '(center center)]))
+
+(define deletePanel (new horizontal-panel% [parent restoreAndDeletePanel]
+                         [alignment '(left center)]))
+
+(define deleteButton (new button% [parent deletePanel]
+                          [label "Delete"]
+                          [callback (lambda (button event)
+                                      (deleteCue 
+                                       mainList 
+                                       (send cueChoice get-selection))
+                                      (send cueChoice delete (send cueChoice get-selection)))]))
+
+(define restorePanel (new horizontal-panel% [parent restoreAndDeletePanel]
                           [alignment '(right center)]))
 
 (define restoreButton (new button% [parent restorePanel]
@@ -847,6 +869,7 @@
                                         mainList 
                                         (+ (send cueChoice get-selection) 1) 
                                         17))]))
+
 
 ; Create A Dialog for Saving Cues.
 
