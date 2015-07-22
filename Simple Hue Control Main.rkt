@@ -832,10 +832,11 @@
 
 (define cueListPanel (new vertical-panel% [parent cueListWindow]
                           [alignment '(left center)]
-                          [min-width 200]))
+                          [min-width 250]))
 
 (define cueChoice (new choice% [parent cueListPanel]
                        [label "Cues:"]
+                       [min-width 230]
                        [choices '()]))
 
 (define restoreAndDeletePanel (new horizontal-panel% [parent cueListPanel]
