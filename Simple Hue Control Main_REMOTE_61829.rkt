@@ -11,7 +11,6 @@
 ; Also needed is a menu item to set the Hue Bridge user name.
 
 (define bridgeAddress "192.168.1.95")
-(define hueUserName "brucelighting")
 
 ; Cue List and Cue Classes
 
@@ -865,102 +864,9 @@
                                         (+ (send cueChoice get-selection) 1) 
                                         17))]))
 
-; Menu Bars
-
-; For Hue Window
-
-(define hueWindowMenuBar (new menu-bar% [parent hueWindow]))
-
-; File Menu
-(define hueWindowMenuFile (new menu% [parent hueWindowMenuBar]
-                               [label "File"]))
-(define hueWindowMenuFileBridgeAddress (new menu-item% [parent hueWindowMenuFile]
-                                      [label "Set Bridge Address…"]
-                                      [callback (lambda (menu event)
-                                                  (send bridgeAddressDialog show #t))]))
-(define hueWindowMenuFileUserName (new menu-item% [parent hueWindowMenuFile]
-                                      [label "Set User Name…"]
-                                      [callback (lambda (menu event)
-                                                  (send userNameDialog show #t))]))
-
-; Set Bridge Address Dialog
-(define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
-                                 [min-width 300]
-                                 [min-height 100]))
-(define bridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
-                                [alignment '(left center)]
-                                [min-width 300]))
-(define bridgeAddressField (new text-field% [parent bridgeAddressPanel]
-                                [label "Bridge Address:"]
-                                [init-value "0.0.0.0"]))
-(define setBridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
-                                   [alignment '(center center)]
-                                   [min-width 300]))
-(define saveBridgeAddress (new button% [parent setBridgeAddressPanel]
-                                 [label "Save"]
-                                 [callback (lambda (button event)
-                                             (set! bridgeAddress (send bridgeAddressField get-value))
-                                             (send bridgeAddressDialog show #f))]))
-(define cancelBridgeAddress (new button% [parent setBridgeAddressPanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send bridgeAddressField set-value "0.0.0.0")
-                                             (send bridgeAddressDialog show #f))]))
-
-; Set Bridge Address Dialog
-(define userNameDialog (new dialog% [label "Enter Hue Bridge User Name"]
-                                 [min-width 300]
-                                 [min-height 100]))
-(define userNamePanel (new horizontal-panel% [parent userNameDialog]
-                                [alignment '(left center)]
-                                [min-width 300]))
-(define userNameField (new text-field% [parent userNamePanel]
-                                [label "User Name:"]))
-(define setUserNamePanel (new horizontal-panel% [parent userNameDialog]
-                                   [alignment '(center center)]
-                                   [min-width 300]))
-(define saveUserName (new button% [parent setUserNamePanel]
-                                 [label "Save"]
-                                 [callback (lambda (button event)
-                                             (set! hueUserName (send userNameField get-value))
-                                             (send userNameDialog show #f))]))
-(define cancelUserName (new button% [parent setUserNamePanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send userNameField set-value "")
-                                             (send userNameDialog show #f))]))
-
-; Windows Menu
-(define hueWindowMenuWindows (new menu% [parent hueWindowMenuBar]
-                                  [label "Windows"]))
-(define hueWindowMenuWindowsNum1 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send hueWindow get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send hueWindow iconize #f))]
-                                      [shortcut #\1]
-                                      [shortcut-prefix '(cmd)]))
-(define hueWindowMenuWindowsNum2 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send statusWindow get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send statusWindow iconize #f))]
-                                      [shortcut #\2]
-                                      [shortcut-prefix '(cmd)]))
-(define hueWindowMenuWindowsNum3 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send allLights get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send allLights iconize #f))]
-                                      [shortcut #\3]
-                                      [shortcut-prefix '(cmd)]))
-(define hueWindowMenuWindowsNum4 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send cueListWindow get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send cueListWindow iconize #f))]
-                                      [shortcut #\4]
-                                      [shortcut-prefix '(cmd)]))
-
 ; Show the Windows
 
+(send hueWindow show #t)
 (send statusWindow show #t)
 (send allLights show #t)
 (send cueListWindow show #t)
-(send hueWindow show #t)

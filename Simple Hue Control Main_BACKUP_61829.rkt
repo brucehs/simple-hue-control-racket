@@ -865,6 +865,38 @@
                                         (+ (send cueChoice get-selection) 1) 
                                         17))]))
 
+<<<<<<< HEAD
+; Create A Dialog for Saving Cues.
+
+(define saveCueDialog (new dialog% [parent hueWindow]
+                           [label "Save Cue"]))
+(define saveCueNamePanel (new horizontal-panel% [parent saveCueDialog]
+                              [alignment '(left center)]
+                              [min-width 200]))
+(define saveCueName (new text-field% [parent saveCueNamePanel]
+                         [label "Cue Name:"]))
+
+(define saveCueButtonPanel (new horizontal-panel% [parent saveCueDialog]
+                                [alignment '(center center)]
+                                [min-width 200]))
+
+(define saveCueOKButton (new button% [parent saveCueButtonPanel]
+                             [label "Save"]
+                             [callback (lambda(button event)
+                                         (let [(newCueName (send saveCueName get-value))]
+                                           (send (new cue% [label newCueName]) set-parent mainList)
+                                           (let [(newCuePosition (- (length (send mainList get-children)) 1))]
+                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus)))
+                                           (send cueChoice append newCueName)
+                                           (send saveCueName set-value "")
+                                           (send saveCueDialog show #f)))]))
+
+(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
+                                 [label "Cancel"]
+                                 [callback (lambda (button event)
+                                             (send saveCueName set-value "")
+                                             (send saveCueDialog show #f))]))
+
 ; Menu Bars
 
 ; For Hue Window
@@ -958,6 +990,8 @@
                                       [shortcut #\4]
                                       [shortcut-prefix '(cmd)]))
 
+=======
+>>>>>>> Show_Control
 ; Show the Windows
 
 (send statusWindow show #t)
