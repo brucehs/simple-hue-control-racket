@@ -6,12 +6,17 @@
 
 (compile-allow-set!-undefined #t)
 
-; Hack for Workshop—Set Bridge Address to Hue Bridge static address.
-; Eventually add a menu item to set this value.
-; Also needed is a menu item to set the Hue Bridge user name.
+; Base Bridge Address and Bridge User Name Variables. Communication will not
+; work until these are set by the user.
 
-(define bridgeAddress "192.168.1.95")
-(define hueUserName "brucelighting")
+; Need to set up error handling if the user tries to use the application
+; before setting these.
+
+; Also need to rewrite so that "brucelighting" is not hard-coded into the
+; Bridge communication procedures.
+
+(define bridgeAddress "0.0.0.0")
+(define hueUserName "generic_user")
 
 ; Cue List and Cue Classes
 
