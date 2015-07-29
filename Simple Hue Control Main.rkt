@@ -6,6 +6,35 @@
 
 (compile-allow-set!-undefined #t)
 
+; Creates a folder in ~/Library/Application Support/ if one does not exist.
+; Create Bridge Address and User Name files if they do not exist. Otherwise,
+; open the files.
+
+; Yes, this is very amateur that one configuration value is set per file. At
+; some point, this should be updated so the values are stored in and read from
+; a plist file in ~/Library/Preferences.
+
+(define supportDirectory 
+  (string->path (string-append 
+                 (path->string (find-system-path 'home-dir)) 
+                 "Library/Application Support/Simple Hue Control/")))
+
+(define bridgeAddressFile
+  (build-path supportDirectory (string->path "Bridge Address.shc")))
+
+(define bridgeUserNameFile
+  (build-path supportDirectory (string->path "Bridge User Name.shc")))
+
+(cond
+  ((not (directory-exists? supportDirectory))
+   (make-directory supportDirectory)))
+
+(define addressWritePort (open-output-file bridgeAddressFile #:mode 'text #:exists 'can-update))
+(define userNameWritePort (open-output-file bridgeUserNameFile #:mode 'text #:exists 'can-update))
+
+(define addressReadPort (open-input-file bridgeAddressFile #:mode 'text))
+(define userNameReadPort (open-input-file bridgeUserNameFile #:mode 'text))
+
 ; Base Bridge Address and Bridge User Name Variables. Communication will not
 ; work until these are set by the user.
 
@@ -15,8 +44,8 @@
 ; Also need to rewrite so that "brucelighting" is not hard-coded into the
 ; Bridge communication procedures.
 
-(define bridgeAddress "0.0.0.0")
-(define hueUserName "generic_user")
+(define bridgeAddress (file->value bridgeAddressFile))
+(define hueUserName (file->value bridgeUserNameFile))
 
 ; Cue List and Cue Classes
 
@@ -431,7 +460,7 @@
                               [alignment '(left center)]
                               [min-width 200]))
 (define saveCueNameField (new text-field% [parent saveCueNamePanel]
-                         [label "Cue Name:"]))
+                              [label "Cue Name:"]))
 
 (define saveCueButtonPanel (new horizontal-panel% [parent saveCueDialog]
                                 [alignment '(right center)]
@@ -880,13 +909,13 @@
 (define hueWindowMenuFile (new menu% [parent hueWindowMenuBar]
                                [label "File"]))
 (define hueWindowMenuFileBridgeAddress (new menu-item% [parent hueWindowMenuFile]
-                                      [label "Set Bridge Address…"]
-                                      [callback (lambda (menu event)
-                                                  (send bridgeAddressDialog show #t))]))
+                                            [label "Set Bridge Address…"]
+                                            [callback (lambda (menu event)
+                                                        (send bridgeAddressDialog show #t))]))
 (define hueWindowMenuFileUserName (new menu-item% [parent hueWindowMenuFile]
-                                      [label "Set User Name…"]
-                                      [callback (lambda (menu event)
-                                                  (send userNameDialog show #t))]))
+                                       [label "Set User Name…"]
+                                       [callback (lambda (menu event)
+                                                   (send userNameDialog show #t))]))
 
 ; Set Bridge Address Dialog
 (define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
@@ -902,10 +931,14 @@
                                    [alignment '(center center)]
                                    [min-width 300]))
 (define saveBridgeAddress (new button% [parent setBridgeAddressPanel]
-                                 [label "Save"]
-                                 [callback (lambda (button event)
-                                             (set! bridgeAddress (send bridgeAddressField get-value))
-                                             (send bridgeAddressDialog show #f))]))
+                               [label "Save"]
+                               [callback (lambda (button event)
+                                           (set! bridgeAddress (send bridgeAddressField get-value))
+                                           (with-output-to-file bridgeAddressFile
+                                             (lambda () (write (send bridgeAddressField get-value)))
+                                             #:mode 'text
+                                             #:exists 'replace)
+                                           (send bridgeAddressDialog show #f))]))
 (define cancelBridgeAddress (new button% [parent setBridgeAddressPanel]
                                  [label "Cancel"]
                                  [callback (lambda (button event)
@@ -914,26 +947,26 @@
 
 ; Set Bridge Address Dialog
 (define userNameDialog (new dialog% [label "Enter Hue Bridge User Name"]
-                                 [min-width 300]
-                                 [min-height 100]))
+                            [min-width 300]
+                            [min-height 100]))
 (define userNamePanel (new horizontal-panel% [parent userNameDialog]
-                                [alignment '(left center)]
-                                [min-width 300]))
+                           [alignment '(left center)]
+                           [min-width 300]))
 (define userNameField (new text-field% [parent userNamePanel]
-                                [label "User Name:"]))
+                           [label "User Name:"]))
 (define setUserNamePanel (new horizontal-panel% [parent userNameDialog]
-                                   [alignment '(center center)]
-                                   [min-width 300]))
+                              [alignment '(center center)]
+                              [min-width 300]))
 (define saveUserName (new button% [parent setUserNamePanel]
-                                 [label "Save"]
-                                 [callback (lambda (button event)
-                                             (set! hueUserName (send userNameField get-value))
-                                             (send userNameDialog show #f))]))
+                          [label "Save"]
+                          [callback (lambda (button event)
+                                      (set! hueUserName (send userNameField get-value))
+                                      (send userNameDialog show #f))]))
 (define cancelUserName (new button% [parent setUserNamePanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send userNameField set-value "")
-                                             (send userNameDialog show #f))]))
+                            [label "Cancel"]
+                            [callback (lambda (button event)
+                                        (send userNameField set-value "")
+                                        (send userNameDialog show #f))]))
 
 ; Windows Menu
 (define hueWindowMenuWindows (new menu% [parent hueWindowMenuBar]
