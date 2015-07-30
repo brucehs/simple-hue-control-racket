@@ -7,7 +7,7 @@ This program was originally created for [Superhero Clubhouse's](http://www.super
 
 ## Notes
 
-I am only providing the source code and not a compiled binary as there are still hard coded aspects (such as the user name) that will need to be changed for the program to be functional. A free download of [Dr. Racket](http://download.racket-lang.org/) is needed to run or compile the software. Moreover, familarity with the [Philip Hue API](http://www.developers.meethue.com/philips-hue-api) is highly recommended.  
+I am only providing the source code and not a compiled binary as there are still hard coded aspects (such as the user name) that will need to be changed for the program to be functional. A free download of [Dr. Racket](http://download.racket-lang.org/) is needed to run or compile the software. Moreover, familiarity with the [Philip Hue API](http://www.developers.meethue.com/philips-hue-api) is highly recommended.  
 
 **Some Limitations:** 
 
@@ -15,7 +15,7 @@ I am only providing the source code and not a compiled binary as there are still
 
 * Everything runs on the main thread, so larger RESTful commands freeze the program as they are executed.  
 
-* The bridge username is currently hard coded. Moreover, custom usernames are about to be depricated and randomly generated usernames will be used instead. Functionality to create said usernames is not yet in the program, so one must use another tool (I've used bash curl scripts).  
+* The bridge username is currently hard coded. Moreover, custom usernames are about to be deprecated and randomly generated usernames will be used instead. Functionality to create said usernames is not yet in the program, so one must use another tool (I've used bash curl scripts).  
 
 * For theatrical purposes, a dedicated router—not connected to the internet—is recommended.  
 
