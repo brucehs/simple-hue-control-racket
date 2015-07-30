@@ -949,6 +949,11 @@
                                          [callback (lambda (menu event)
                                                      (send userNameDialog show #t))]))
 
+(define hueWindowMenuBridgeUpdateFirmware (new menu-item% [parent hueWindowMenuBridge]
+                                         [label "Update Bridge Firmware"]
+                                         [callback (lambda (menu event)
+                                                     (send updateFirmwareDialog show #t))]))
+
 ; Set Bridge Address Dialog
 (define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
                                  [min-width 300]
@@ -1063,81 +1068,110 @@
 
 ; Bridge Update Dialog
 
-(let-values ([(httpStatus httpHeader jsonResponse)
-              (http-sendrecv
-               bridgeAddress (string-append 
-                              (string-append "/api/" hueUserName) 
-                              "/config/") 
-               #:method 'GET
-               #:headers
-               '("Content-Type: application/json")
-               #:content-decode '(json))])
-  (let ([bridgeResponse (read-json jsonResponse)])
-    (cond
-      ((equal? (hash-ref (hash-ref bridgeResponse 'portalstate) 'signedon) #t)
-       (cond
-         ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #t)
-          (cond
-            ; Possible Responses:
-            ; 0 = No update available
-            ; 1 = Downloading updates
-            ; 2 = Updates are ready to be installed
-            ; 3 = Installing updates
-            ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 0)
-             ; Set 'checkforupdate to #t.
-             (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
-                           (http-sendrecv
-                            bridgeAddress (string-append 
-                                           (string-append "/api/" hueUserName) 
-                                           "/config/") 
-                            #:method 'PUT
-                            #:data
-                            (jsexpr->string
-                             (hash 'swupdate
-                                   (hash 'checkforupdate #t)))
-                            #:headers
-                            '("Content-Type: application/json")
-                            #:content-decode '(json))])
-               (let ([bridgeResponse2 (read-json jsonResponse2)])
-                 (cond 
-                   ((equal? (hash-keys (car bridgeResponse2)) '(error))
-                    (set! bridgeError (string-append "Error: " 
-                                                     (hash-ref 
-                                                      (hash-ref (car bridgeResponse2) 'error) 
-                                                      'description))))
-                   ((equal? (hash-keys (car bridgeResponse2)) '(success))
-                    (set! bridgeError "Error: No Update Available. Will Check."))))))
-             ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 1)
-              (set! bridgeError "Error: Update Still Downloading. Please Wait."))
-             ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 2)
-              ; Need to initiate Update.
-              (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
-                            (http-sendrecv
-                             bridgeAddress (string-append 
-                                            (string-append "/api/" hueUserName) 
-                                            "/config/") 
-                             #:method 'PUT
-                             #:data
-                             (jsexpr->string
-                              (hash 'swupdate
-                                    (hash 'updatestate 3)))
-                             #:headers
-                             '("Content-Type: application/json")
-                             #:content-decode '(json))])
-                (let ([bridgeResponse2 (read-json jsonResponse2)])
-                  (cond 
-                    ((equal? (hash-keys (car bridgeResponse2)) '(error))
-                     (set! bridgeError (string-append "Error: " 
-                                                      (hash-ref 
-                                                       (hash-ref (car bridgeResponse2) 'error) 
-                                                       'description))))
-                    ((equal? (hash-keys (car bridgeResponse2)) '(success))
-                     (set! bridgeError ""))))))
-              ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 3)
-               (set! bridgeError updatingError))))
-         ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #f)
-          (set! bridgeError "No Update Available."))))
-      (else (set! bridgeError portalError)))))
+(define portalError "Error: Portal Connection Unavailable. Check the bridge's internet connection. Is the third light a steady blue?")
+(define updatingError "Error: Bridge Is Currently Updating. Please Wait for Blue Lights to Return to Normal")
+
+(define updateBridge
+  (lambda ()
+    (let-values ([(httpStatus httpHeader jsonResponse)
+                  (http-sendrecv
+                   bridgeAddress (string-append 
+                                  (string-append "/api/" hueUserName) 
+                                  "/config/") 
+                   #:method 'GET
+                   #:headers
+                   '("Content-Type: application/json")
+                   #:content-decode '(json))])
+      (let ([bridgeResponse (read-json jsonResponse)])
+        (cond
+          ((equal? (hash-ref (hash-ref bridgeResponse 'portalstate) 'signedon) #t)
+           (cond
+             ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #t)
+              (cond
+                ; Possible Responses:
+                ; 0 = No update available
+                ; 1 = Downloading updates
+                ; 2 = Updates are ready to be installed
+                ; 3 = Installing updates
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 0)
+                 ; Set 'checkforupdate to #t.
+                 (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
+                               (http-sendrecv
+                                bridgeAddress (string-append 
+                                               (string-append "/api/" hueUserName) 
+                                               "/config/") 
+                                #:method 'PUT
+                                #:data
+                                (jsexpr->string
+                                 (hash 'swupdate
+                                       (hash 'checkforupdate #t)))
+                                #:headers
+                                '("Content-Type: application/json")
+                                #:content-decode '(json))])
+                   (let ([bridgeResponse2 (read-json jsonResponse2)])
+                     (cond 
+                       ((equal? (hash-keys (car bridgeResponse2)) '(error))
+                        (set! bridgeError (string-append "Error: " 
+                                                         (hash-ref 
+                                                          (hash-ref (car bridgeResponse2) 'error) 
+                                                          'description))))
+                       ((equal? (hash-keys (car bridgeResponse2)) '(success))
+                        (set! bridgeError "Error: No Update Available. Will Check."))))))
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 1)
+                 (set! bridgeError "Error: Update Still Downloading. Please Wait."))
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 2)
+                 ; Need to initiate Update.
+                 (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
+                               (http-sendrecv
+                                bridgeAddress (string-append 
+                                               (string-append "/api/" hueUserName) 
+                                               "/config/") 
+                                #:method 'PUT
+                                #:data
+                                (jsexpr->string
+                                 (hash 'swupdate
+                                       (hash 'updatestate 3)))
+                                #:headers
+                                '("Content-Type: application/json")
+                                #:content-decode '(json))])
+                   (let ([bridgeResponse2 (read-json jsonResponse2)])
+                     (cond 
+                       ((equal? (hash-keys (car bridgeResponse2)) '(error))
+                        (set! bridgeError (string-append "Error: " 
+                                                         (hash-ref 
+                                                          (hash-ref (car bridgeResponse2) 'error) 
+                                                          'description))))
+                       ((equal? (hash-keys (car bridgeResponse2)) '(success))
+                        (set! bridgeError "Done."))))))
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 3)
+                 (set! bridgeError updatingError))))
+             ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #f)
+              (set! bridgeError "No Update Available."))))
+          (else (set! bridgeError portalError)))))))
+
+(define updateFirmwareDialog (new dialog% [label "Update Bridge Firmware"]
+                            [min-width 350]
+                            [min-height 100]))
+
+(define updateFirmwareMessagePanel (new vertical-panel% [parent updateFirmwareDialog]
+                                  [alignment '(center center)]
+                                  [min-width 200]))
+(define updateFirmwareMessage (new message% [parent updateFirmwareMessagePanel]
+                             [label "Update Firmware? Bridge Must Be Connected to the Internet."]
+                             [horiz-margin 20]))
+
+(define updateFirmwarePanel (new horizontal-panel% [parent updateFirmwareDialog]
+                              [alignment '(center center)]
+                              [min-width 290]))
+(define closeUpdateFirmware (new button% [parent updateFirmwarePanel]
+                            [label "Close"]
+                            [callback (lambda (button event)
+                                        (send updateFirmwareDialog show #f))]))
+(define updateFirmware (new button% [parent updateFirmwarePanel]
+                          [label "Update"]
+                          [callback (lambda (button event)
+                                      (updateBridge)
+                                      (send updateFirmwareMessage set-label bridgeError))]))
 
 ; Windows Menu
 (define hueWindowMenuWindows (new menu% [parent hueWindowMenuBar]
