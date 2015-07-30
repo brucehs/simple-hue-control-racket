@@ -15,8 +15,6 @@ I am only providing the source code and not a compiled binary as there are still
 
 * Everything runs on the main thread, so larger RESTful commands freeze the program as they are executed.  
 
-* The bridge username is currently hard coded. Moreover, custom usernames are about to be deprecated and randomly generated usernames will be used instead. Functionality to create said usernames is not yet in the program, so one must use another tool (I've used bash curl scripts).  
-
 * For theatrical purposes, a dedicated router—not connected to the internet—is recommended.  
 
 * I've only run the program on Mac OS X 10.9 and 10.10 and Racket v 6.0. I have no clue how it will function on other platforms.  

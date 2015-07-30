@@ -45,14 +45,11 @@
 (define userNameReadPort (open-input-file bridgeUserNameFile #:mode 'text))
 (define deviceTypeReadPort (open-input-file deviceTypeFile #:mode 'text))
 
-; Base Bridge Address and Bridge User Name Variables. Communication will not
-; work until these are set by the user.
+; Bridge Communication Variables. Communication will not work until 
+; these are set by the user.
 
 ; Need to set up error handling if the user tries to use the application
 ; before setting these.
-
-; Also need to rewrite so that "brucelighting" is not hard-coded into the
-; Bridge communication procedures.
 
 (define fileEmpty?
   (lambda (file)
@@ -165,7 +162,13 @@
     (for ([i (in-range (length lights))])
       (let-values ([(httpStatus httpHeader jsonResponse)
                     (http-sendrecv
-                     bridgeAddress (string-append (string-append "/api/brucelighting/lights/" (number->string (list-ref lights i))) "/state")
+                     bridgeAddress (string-append 
+                                    (string-append 
+                                     (string-append 
+                                      (string-append "/api/" hueUserName) 
+                                      "/lights/") 
+                                     (number->string (list-ref lights i))) 
+                                    "/state")
                      #:method 'PUT
                      #:data
                      (jsexpr->string
@@ -246,7 +249,11 @@
     (for ([i (in-range firstLight (+ lastLight 1))])
       (let-values ([(httpStatus httpHeader jsonResponse)
                     (http-sendrecv
-                     bridgeAddress (string-append "/api/brucelighting/lights/" (number->string i))
+                     bridgeAddress (string-append 
+                                    (string-append 
+                                     (string-append "/api/" hueUserName) 
+                                     "/lights/") 
+                                    (number->string i))
                      #:method 'GET
                      #:headers
                      '("Content-Type: application/json")
@@ -832,7 +839,7 @@
   (lambda ()
     (let-values ([(httpStatus httpHeader jsonResponse)
                   (http-sendrecv
-                   bridgeAddress "/api/brucelighting/lights/"
+                   bridgeAddress (string-append (string-append "/api/" hueUserName) "/lights/")
                    #:method 'GET
                    #:headers
                    '("Content-Type: application/json")
@@ -857,7 +864,13 @@
       (let ([lightState (getOneJsonState cueList cueNumber i)])
         (let-values ([(httpStatus httpHeader jsonResponse)
                       (http-sendrecv
-                       bridgeAddress (string-append (string-append "/api/brucelighting/lights/" (number->string i)) "/state")
+                       bridgeAddress (string-append 
+                                      (string-append 
+                                       (string-append 
+                                        (string-append "/api/" hueUserName) 
+                                        "/lights/") 
+                                       (number->string i)) 
+                                      "/state")
                        #:method 'PUT
                        #:data
                        (jsexpr->string
