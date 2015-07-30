@@ -13,11 +13,13 @@ I am only providing the source code and not a compiled binary as there are still
 
 * There is currently no way to patch lights, so the bulbs must be controlled in the order that they have been registered with the Hue Bridge.  
 
+* The Bridge Address and Bridge User Name must be set before the program will function. They are available in the Bridge Menu that appears when the main, "Simple Hue Control", window is in the foreground. Currently, there is no error handling and the program will crash if it is used before these values are set.  
+
 * Everything runs on the main thread, so larger RESTful commands freeze the program as they are executed.  
 
 * For theatrical purposes, a dedicated router—not connected to the internet—is recommended.  
 
-* I've only run the program on Mac OS X 10.9 and 10.10 and Racket v 6.0. I have no clue how it will function on other platforms.  
+* I've only run the program on Mac OS X 10.9 and 10.10 and Racket v 6.0. I have no clue how it will function on other platforms. As it stores configuration files in ~/Library/Application Support/Simple Hue Control/, there will probably be problems. Adding support for Windows and Linux is a low priority, so I suggest forking if such functionality is important to you.  
 
 ## How To  
 
