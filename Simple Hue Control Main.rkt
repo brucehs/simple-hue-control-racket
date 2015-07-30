@@ -22,18 +22,28 @@
 (define bridgeAddressFile
   (build-path supportDirectory (string->path "Bridge Address.shc")))
 
+(define userDeviceNameFile
+  (build-path supportDirectory (string->path "User Device Name.shc")))
+
 (define bridgeUserNameFile
   (build-path supportDirectory (string->path "Bridge User Name.shc")))
+
+(define deviceTypeFile
+  (build-path supportDirectory (string->path "Device Type.shc")))
 
 (cond
   ((not (directory-exists? supportDirectory))
    (make-directory supportDirectory)))
 
 (define addressWritePort (open-output-file bridgeAddressFile #:mode 'text #:exists 'can-update))
+(define deviceNameWritePort (open-output-file userDeviceNameFile #:mode 'text #:exists 'can-update))
 (define userNameWritePort (open-output-file bridgeUserNameFile #:mode 'text #:exists 'can-update))
+(define deviceTypeWritePort (open-output-file deviceTypeFile #:mode 'text #:exists 'can-update))
 
 (define addressReadPort (open-input-file bridgeAddressFile #:mode 'text))
+(define deviceNameReadPort (open-input-file userDeviceNameFile #:mode 'text))
 (define userNameReadPort (open-input-file bridgeUserNameFile #:mode 'text))
+(define deviceTypeReadPort (open-input-file deviceTypeFile #:mode 'text))
 
 ; Base Bridge Address and Bridge User Name Variables. Communication will not
 ; work until these are set by the user.
@@ -44,8 +54,17 @@
 ; Also need to rewrite so that "brucelighting" is not hard-coded into the
 ; Bridge communication procedures.
 
-(define bridgeAddress (file->value bridgeAddressFile))
-(define hueUserName (file->value bridgeUserNameFile))
+(define fileEmpty?
+  (lambda (file)
+    (cond
+      ((equal? (file->string file) "")(file->string file))
+      (else (file->value file)))))
+
+(define bridgeAddress (fileEmpty? bridgeAddressFile))
+(define userDeviceName (fileEmpty? userDeviceNameFile))
+(define hueUserName (fileEmpty? bridgeUserNameFile))
+(define deviceType (fileEmpty? deviceTypeFile))
+(define appName "simple_hue_control")
 
 ; Cue List and Cue Classes
 
@@ -905,17 +924,17 @@
 
 (define hueWindowMenuBar (new menu-bar% [parent hueWindow]))
 
-; File Menu
-(define hueWindowMenuFile (new menu% [parent hueWindowMenuBar]
-                               [label "File"]))
-(define hueWindowMenuFileBridgeAddress (new menu-item% [parent hueWindowMenuFile]
-                                            [label "Set Bridge Address…"]
-                                            [callback (lambda (menu event)
-                                                        (send bridgeAddressDialog show #t))]))
-(define hueWindowMenuFileUserName (new menu-item% [parent hueWindowMenuFile]
-                                       [label "Set User Name…"]
-                                       [callback (lambda (menu event)
-                                                   (send userNameDialog show #t))]))
+; Bridge Menu
+(define hueWindowMenuBridge (new menu% [parent hueWindowMenuBar]
+                                 [label "Bridge"]))
+(define hueWindowMenuBridgeBridgeAddress (new menu-item% [parent hueWindowMenuBridge]
+                                              [label "Set Bridge Address…"]
+                                              [callback (lambda (menu event)
+                                                          (send bridgeAddressDialog show #t))]))
+(define hueWindowMenuBridgeUserName (new menu-item% [parent hueWindowMenuBridge]
+                                         [label "Set User Name…"]
+                                         [callback (lambda (menu event)
+                                                     (send userNameDialog show #t))]))
 
 ; Set Bridge Address Dialog
 (define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
@@ -926,10 +945,16 @@
                                 [min-width 300]))
 (define bridgeAddressField (new text-field% [parent bridgeAddressPanel]
                                 [label "Bridge Address:"]
-                                [init-value "0.0.0.0"]))
+                                [init-value bridgeAddress]
+                                [horiz-margin 20]))
 (define setBridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
                                    [alignment '(center center)]
                                    [min-width 300]))
+(define cancelBridgeAddress (new button% [parent setBridgeAddressPanel]
+                                 [label "Cancel"]
+                                 [callback (lambda (button event)
+                                             ;(send bridgeAddressField set-value "0.0.0.0")
+                                             (send bridgeAddressDialog show #f))]))
 (define saveBridgeAddress (new button% [parent setBridgeAddressPanel]
                                [label "Save"]
                                [callback (lambda (button event)
@@ -939,34 +964,89 @@
                                              #:mode 'text
                                              #:exists 'replace)
                                            (send bridgeAddressDialog show #f))]))
-(define cancelBridgeAddress (new button% [parent setBridgeAddressPanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send bridgeAddressField set-value "0.0.0.0")
-                                             (send bridgeAddressDialog show #f))]))
 
-; Set Bridge Address Dialog
+; Set Bridge User Name Dialog
+
+(define bridgeError "")
+
+(define setUserName!
+  (lambda (device)
+    (let-values ([(httpStatus httpHeader jsonResponse)
+                  (http-sendrecv
+                   bridgeAddress "/api"
+                   #:method 'POST
+                   #:data
+                   (jsexpr->string
+                    (hash 'devicetype device))
+                   #:headers
+                   '("Content-Type: application/json")
+                   #:content-decode '(json))])
+      (let ([bridgeResponse (read-json jsonResponse)])
+        (cond
+          ((equal? (hash-keys (car bridgeResponse)) '(error))
+           (set! bridgeError (string-append "Error: " (hash-ref (hash-ref (car bridgeResponse) 'error) 'description))))
+          ((equal? (hash-keys (car bridgeResponse)) '(success))
+           (set! hueUserName (hash-ref (hash-ref (car bridgeResponse) 'success) 'username))
+           (set! bridgeError "")))))))
+
+
 (define userNameDialog (new dialog% [label "Enter Hue Bridge User Name"]
-                            [min-width 300]
+                            [min-width 550]
                             [min-height 100]))
-(define userNamePanel (new horizontal-panel% [parent userNameDialog]
+(define userNameMessagePanel (new vertical-panel% [parent userNameDialog]
+                                  [alignment '(center center)]
+                                  [min-width 300]))
+(define userNameMessage (new message% [parent userNameMessagePanel]
+                             [label "Enter Device Name (ie: My Macbook). Press Link Button on Bridge. Click \"Set\"."]
+                             [vert-margin 20]
+                             [horiz-margin 20]
+                             [stretchable-height 200]))
+(define userNamePanel (new vertical-panel% [parent userNameDialog]
                            [alignment '(left center)]
-                           [min-width 300]))
-(define userNameField (new text-field% [parent userNamePanel]
-                           [label "User Name:"]))
+                           [min-width 200]
+                           [stretchable-width 200]))
+(define userDeviceNameField (new text-field% [parent userNamePanel]
+                                 [label "Device Name:"]
+                                 [init-value userDeviceName]
+                                 [horiz-margin 50]
+                                 [min-width 200]
+                                 [stretchable-width 200]))
 (define setUserNamePanel (new horizontal-panel% [parent userNameDialog]
                               [alignment '(center center)]
-                              [min-width 300]))
-(define saveUserName (new button% [parent setUserNamePanel]
-                          [label "Save"]
-                          [callback (lambda (button event)
-                                      (set! hueUserName (send userNameField get-value))
-                                      (send userNameDialog show #f))]))
+                              [min-width 320]))
 (define cancelUserName (new button% [parent setUserNamePanel]
                             [label "Cancel"]
                             [callback (lambda (button event)
-                                        (send userNameField set-value "")
+                                        ;(send userDeviceNameField set-value "")
                                         (send userNameDialog show #f))]))
+(define saveUserName (new button% [parent setUserNamePanel]
+                          [label "Set"]
+                          [callback (lambda (button event)
+                                      (set! userDeviceName 
+                                            (send userDeviceNameField get-value))
+                                      (with-output-to-file userDeviceNameFile
+                                        (lambda () (write (send userDeviceNameField get-value)))
+                                        #:mode 'text
+                                        #:exists 'replace)
+                                      (set! deviceType (string-append appName (string-append "#" userDeviceName)))
+                                      (with-output-to-file deviceTypeFile
+                                        (lambda () (write deviceType))
+                                        #:mode 'text
+                                        #:exists 'replace)
+                                      (setUserName! deviceType)
+                                      (cond
+                                        ((equal? bridgeError "")
+                                         (with-output-to-file bridgeUserNameFile
+                                           (lambda () (write hueUserName))
+                                           #:mode 'text
+                                           #:exists 'replace)
+                                         (send userNameDialog show #f))
+                                        (else
+                                         (send userNameMessage set-label
+                                               (string-append 
+                                                bridgeError 
+                                                ". Enter Device Name (ie: My Macbook).
+ \\n Press Link Button on Bridge. Click \"Set\".")))))]))
 
 ; Windows Menu
 (define hueWindowMenuWindows (new menu% [parent hueWindowMenuBar]
