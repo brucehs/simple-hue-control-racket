@@ -64,6 +64,10 @@
 (define appName "simple_hue_control")
 
 ; Cue List and Cue Classes
+; Perhaps Scenes could be used for Cueing instead. They can have the
+; transitiontime value attached. However, the state of the scene is not
+; available via an API call. It may be better to ask the user to specify
+; a time upon saving a cue.
 
 (define cueList%
   (class object%
