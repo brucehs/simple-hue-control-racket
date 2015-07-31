@@ -6,13 +6,68 @@
 
 (compile-allow-set!-undefined #t)
 
-; Hack for Workshop—Set Bridge Address to Hue Bridge static address.
-; Eventually add a menu item to set this value.
-; Also needed is a menu item to set the Hue Bridge user name.
+; Creates a folder in ~/Library/Application Support/ if one does not exist.
+; Create Bridge Address and User Name files if they do not exist. Otherwise,
+; open the files.
 
-(define bridgeAddress "192.168.1.95")
+; Yes, this is very amateur that one configuration value is set per file. At
+; some point, this should be updated so the values are stored in and read from
+; a plist file in ~/Library/Preferences.
+
+(define supportDirectory 
+  (string->path (string-append 
+                 (path->string (find-system-path 'home-dir)) 
+                 "Library/Application Support/Simple Hue Control/")))
+
+(define bridgeAddressFile
+  (build-path supportDirectory (string->path "Bridge Address.shc")))
+
+(define userDeviceNameFile
+  (build-path supportDirectory (string->path "User Device Name.shc")))
+
+(define bridgeUserNameFile
+  (build-path supportDirectory (string->path "Bridge User Name.shc")))
+
+(define deviceTypeFile
+  (build-path supportDirectory (string->path "Device Type.shc")))
+
+(cond
+  ((not (directory-exists? supportDirectory))
+   (make-directory supportDirectory)))
+
+(define addressWritePort (open-output-file bridgeAddressFile #:mode 'text #:exists 'can-update))
+(define deviceNameWritePort (open-output-file userDeviceNameFile #:mode 'text #:exists 'can-update))
+(define userNameWritePort (open-output-file bridgeUserNameFile #:mode 'text #:exists 'can-update))
+(define deviceTypeWritePort (open-output-file deviceTypeFile #:mode 'text #:exists 'can-update))
+
+(define addressReadPort (open-input-file bridgeAddressFile #:mode 'text))
+(define deviceNameReadPort (open-input-file userDeviceNameFile #:mode 'text))
+(define userNameReadPort (open-input-file bridgeUserNameFile #:mode 'text))
+(define deviceTypeReadPort (open-input-file deviceTypeFile #:mode 'text))
+
+; Bridge Communication Variables. Communication will not work until 
+; these are set by the user.
+
+; Need to set up error handling if the user tries to use the application
+; before setting these.
+
+(define fileEmpty?
+  (lambda (file)
+    (cond
+      ((equal? (file->string file) "")(file->string file))
+      (else (file->value file)))))
+
+(define bridgeAddress (fileEmpty? bridgeAddressFile))
+(define userDeviceName (fileEmpty? userDeviceNameFile))
+(define hueUserName (fileEmpty? bridgeUserNameFile))
+(define deviceType (fileEmpty? deviceTypeFile))
+(define appName "simple_hue_control")
 
 ; Cue List and Cue Classes
+; Perhaps Scenes could be used for Cueing instead. They can have the
+; transitiontime value attached. However, the state of the scene is not
+; available via an API call. It may be better to ask the user to specify
+; a time upon saving a cue.
 
 (define cueList%
   (class object%
@@ -111,7 +166,13 @@
     (for ([i (in-range (length lights))])
       (let-values ([(httpStatus httpHeader jsonResponse)
                     (http-sendrecv
-                     bridgeAddress (string-append (string-append "/api/brucelighting/lights/" (number->string (list-ref lights i))) "/state")
+                     bridgeAddress (string-append 
+                                    (string-append 
+                                     (string-append 
+                                      (string-append "/api/" hueUserName) 
+                                      "/lights/") 
+                                     (number->string (list-ref lights i))) 
+                                    "/state")
                      #:method 'PUT
                      #:data
                      (jsexpr->string
@@ -192,7 +253,11 @@
     (for ([i (in-range firstLight (+ lastLight 1))])
       (let-values ([(httpStatus httpHeader jsonResponse)
                     (http-sendrecv
-                     bridgeAddress (string-append "/api/brucelighting/lights/" (number->string i))
+                     bridgeAddress (string-append 
+                                    (string-append 
+                                     (string-append "/api/" hueUserName) 
+                                     "/lights/") 
+                                    (number->string i))
                      #:method 'GET
                      #:headers
                      '("Content-Type: application/json")
@@ -425,7 +490,7 @@
                               [alignment '(left center)]
                               [min-width 200]))
 (define saveCueNameField (new text-field% [parent saveCueNamePanel]
-                         [label "Cue Name:"]))
+                              [label "Cue Name:"]))
 
 (define saveCueButtonPanel (new horizontal-panel% [parent saveCueDialog]
                                 [alignment '(right center)]
@@ -778,7 +843,7 @@
   (lambda ()
     (let-values ([(httpStatus httpHeader jsonResponse)
                   (http-sendrecv
-                   bridgeAddress "/api/brucelighting/lights/"
+                   bridgeAddress (string-append (string-append "/api/" hueUserName) "/lights/")
                    #:method 'GET
                    #:headers
                    '("Content-Type: application/json")
@@ -803,7 +868,13 @@
       (let ([lightState (getOneJsonState cueList cueNumber i)])
         (let-values ([(httpStatus httpHeader jsonResponse)
                       (http-sendrecv
-                       bridgeAddress (string-append (string-append "/api/brucelighting/lights/" (number->string i)) "/state")
+                       bridgeAddress (string-append 
+                                      (string-append 
+                                       (string-append 
+                                        (string-append "/api/" hueUserName) 
+                                        "/lights/") 
+                                       (number->string i)) 
+                                      "/state")
                        #:method 'PUT
                        #:data
                        (jsexpr->string
@@ -864,9 +935,279 @@
                                         (+ (send cueChoice get-selection) 1) 
                                         17))]))
 
+; Menu Bars
+
+; For Hue Window
+
+(define hueWindowMenuBar (new menu-bar% [parent hueWindow]))
+
+; Bridge Menu
+(define hueWindowMenuBridge (new menu% [parent hueWindowMenuBar]
+                                 [label "Bridge"]))
+(define hueWindowMenuBridgeBridgeAddress (new menu-item% [parent hueWindowMenuBridge]
+                                              [label "Set Bridge Address…"]
+                                              [callback (lambda (menu event)
+                                                          (send bridgeAddressDialog show #t))]))
+(define hueWindowMenuBridgeUserName (new menu-item% [parent hueWindowMenuBridge]
+                                         [label "Set User Name…"]
+                                         [callback (lambda (menu event)
+                                                     (send userNameDialog show #t))]))
+
+(define hueWindowMenuBridgeUpdateFirmware (new menu-item% [parent hueWindowMenuBridge]
+                                         [label "Update Bridge Firmware"]
+                                         [callback (lambda (menu event)
+                                                     (send updateFirmwareDialog show #t))]))
+
+; Set Bridge Address Dialog
+(define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
+                                 [min-width 300]
+                                 [min-height 100]))
+(define bridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
+                                [alignment '(left center)]
+                                [min-width 300]))
+(define bridgeAddressField (new text-field% [parent bridgeAddressPanel]
+                                [label "Bridge Address:"]
+                                [init-value bridgeAddress]
+                                [horiz-margin 20]))
+(define setBridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
+                                   [alignment '(center center)]
+                                   [min-width 300]))
+(define cancelBridgeAddress (new button% [parent setBridgeAddressPanel]
+                                 [label "Cancel"]
+                                 [callback (lambda (button event)
+                                             ;(send bridgeAddressField set-value "0.0.0.0")
+                                             (send bridgeAddressDialog show #f))]))
+(define saveBridgeAddress (new button% [parent setBridgeAddressPanel]
+                               [label "Save"]
+                               [callback (lambda (button event)
+                                           (set! bridgeAddress (send bridgeAddressField get-value))
+                                           (with-output-to-file bridgeAddressFile
+                                             (lambda () (write (send bridgeAddressField get-value)))
+                                             #:mode 'text
+                                             #:exists 'replace)
+                                           (send bridgeAddressDialog show #f))]))
+
+; Set Bridge User Name Dialog
+
+(define bridgeError "")
+
+(define setUserName!
+  (lambda (device)
+    (let-values ([(httpStatus httpHeader jsonResponse)
+                  (http-sendrecv
+                   bridgeAddress "/api"
+                   #:method 'POST
+                   #:data
+                   (jsexpr->string
+                    (hash 'devicetype device))
+                   #:headers
+                   '("Content-Type: application/json")
+                   #:content-decode '(json))])
+      (let ([bridgeResponse (read-json jsonResponse)])
+        (cond
+          ((equal? (hash-keys (car bridgeResponse)) '(error))
+           (set! bridgeError (string-append "Error: " (hash-ref (hash-ref (car bridgeResponse) 'error) 'description))))
+          ((equal? (hash-keys (car bridgeResponse)) '(success))
+           (set! hueUserName (hash-ref (hash-ref (car bridgeResponse) 'success) 'username))
+           (set! bridgeError "")))))))
+
+
+(define userNameDialog (new dialog% [label "Enter Hue Bridge User Name"]
+                            [min-width 550]
+                            [min-height 100]))
+(define userNameMessagePanel (new vertical-panel% [parent userNameDialog]
+                                  [alignment '(center center)]
+                                  [min-width 300]))
+(define userNameMessage (new message% [parent userNameMessagePanel]
+                             [label "Enter Device Name (ie: My Macbook). Press Link Button on Bridge. Click \"Set\"."]
+                             [vert-margin 20]
+                             [horiz-margin 20]
+                             [stretchable-height 200]))
+(define userNamePanel (new vertical-panel% [parent userNameDialog]
+                           [alignment '(left center)]
+                           [min-width 200]
+                           [stretchable-width 200]))
+(define userDeviceNameField (new text-field% [parent userNamePanel]
+                                 [label "Device Name:"]
+                                 [init-value userDeviceName]
+                                 [horiz-margin 50]
+                                 [min-width 200]
+                                 [stretchable-width 200]))
+(define setUserNamePanel (new horizontal-panel% [parent userNameDialog]
+                              [alignment '(center center)]
+                              [min-width 320]))
+(define cancelUserName (new button% [parent setUserNamePanel]
+                            [label "Cancel"]
+                            [callback (lambda (button event)
+                                        ;(send userDeviceNameField set-value "")
+                                        (send userNameDialog show #f))]))
+(define saveUserName (new button% [parent setUserNamePanel]
+                          [label "Set"]
+                          [callback (lambda (button event)
+                                      (set! userDeviceName 
+                                            (send userDeviceNameField get-value))
+                                      (with-output-to-file userDeviceNameFile
+                                        (lambda () (write (send userDeviceNameField get-value)))
+                                        #:mode 'text
+                                        #:exists 'replace)
+                                      (set! deviceType (string-append appName (string-append "#" userDeviceName)))
+                                      (with-output-to-file deviceTypeFile
+                                        (lambda () (write deviceType))
+                                        #:mode 'text
+                                        #:exists 'replace)
+                                      (setUserName! deviceType)
+                                      (cond
+                                        ((equal? bridgeError "")
+                                         (with-output-to-file bridgeUserNameFile
+                                           (lambda () (write hueUserName))
+                                           #:mode 'text
+                                           #:exists 'replace)
+                                         (send userNameDialog show #f))
+                                        (else
+                                         (send userNameMessage set-label
+                                               (string-append 
+                                                bridgeError 
+                                                ". Enter Device Name (ie: My Macbook).
+ \\n Press Link Button on Bridge. Click \"Set\".")))))]))
+
+; Bridge Update Dialog
+
+(define portalError "Error: Portal Connection Unavailable. Check the bridge's internet connection. Is the third light a steady blue?")
+(define updatingError "Error: Bridge Is Currently Updating. Please Wait for Blue Lights to Return to Normal")
+
+(define updateBridge
+  (lambda ()
+    (let-values ([(httpStatus httpHeader jsonResponse)
+                  (http-sendrecv
+                   bridgeAddress (string-append 
+                                  (string-append "/api/" hueUserName) 
+                                  "/config/") 
+                   #:method 'GET
+                   #:headers
+                   '("Content-Type: application/json")
+                   #:content-decode '(json))])
+      (let ([bridgeResponse (read-json jsonResponse)])
+        (cond
+          ((equal? (hash-ref (hash-ref bridgeResponse 'portalstate) 'signedon) #t)
+           (cond
+             ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #t)
+              (cond
+                ; Possible Responses:
+                ; 0 = No update available
+                ; 1 = Downloading updates
+                ; 2 = Updates are ready to be installed
+                ; 3 = Installing updates
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 0)
+                 ; Set 'checkforupdate to #t.
+                 (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
+                               (http-sendrecv
+                                bridgeAddress (string-append 
+                                               (string-append "/api/" hueUserName) 
+                                               "/config/") 
+                                #:method 'PUT
+                                #:data
+                                (jsexpr->string
+                                 (hash 'swupdate
+                                       (hash 'checkforupdate #t)))
+                                #:headers
+                                '("Content-Type: application/json")
+                                #:content-decode '(json))])
+                   (let ([bridgeResponse2 (read-json jsonResponse2)])
+                     (cond 
+                       ((equal? (hash-keys (car bridgeResponse2)) '(error))
+                        (set! bridgeError (string-append "Error: " 
+                                                         (hash-ref 
+                                                          (hash-ref (car bridgeResponse2) 'error) 
+                                                          'description))))
+                       ((equal? (hash-keys (car bridgeResponse2)) '(success))
+                        (set! bridgeError "Error: No Update Available. Will Check."))))))
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 1)
+                 (set! bridgeError "Error: Update Still Downloading. Please Wait."))
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 2)
+                 ; Need to initiate Update.
+                 (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
+                               (http-sendrecv
+                                bridgeAddress (string-append 
+                                               (string-append "/api/" hueUserName) 
+                                               "/config/") 
+                                #:method 'PUT
+                                #:data
+                                (jsexpr->string
+                                 (hash 'swupdate
+                                       (hash 'updatestate 3)))
+                                #:headers
+                                '("Content-Type: application/json")
+                                #:content-decode '(json))])
+                   (let ([bridgeResponse2 (read-json jsonResponse2)])
+                     (cond 
+                       ((equal? (hash-keys (car bridgeResponse2)) '(error))
+                        (set! bridgeError (string-append "Error: " 
+                                                         (hash-ref 
+                                                          (hash-ref (car bridgeResponse2) 'error) 
+                                                          'description))))
+                       ((equal? (hash-keys (car bridgeResponse2)) '(success))
+                        (set! bridgeError "Done."))))))
+                ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 3)
+                 (set! bridgeError updatingError))))
+             ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #f)
+              (set! bridgeError "No Update Available."))))
+          (else (set! bridgeError portalError)))))))
+
+(define updateFirmwareDialog (new dialog% [label "Update Bridge Firmware"]
+                            [min-width 350]
+                            [min-height 100]))
+
+(define updateFirmwareMessagePanel (new vertical-panel% [parent updateFirmwareDialog]
+                                  [alignment '(center center)]
+                                  [min-width 200]))
+(define updateFirmwareMessage (new message% [parent updateFirmwareMessagePanel]
+                             [label "Update Firmware? Bridge Must Be Connected to the Internet."]
+                             [horiz-margin 20]))
+
+(define updateFirmwarePanel (new horizontal-panel% [parent updateFirmwareDialog]
+                              [alignment '(center center)]
+                              [min-width 290]))
+(define closeUpdateFirmware (new button% [parent updateFirmwarePanel]
+                            [label "Close"]
+                            [callback (lambda (button event)
+                                        (send updateFirmwareDialog show #f))]))
+(define updateFirmware (new button% [parent updateFirmwarePanel]
+                          [label "Update"]
+                          [callback (lambda (button event)
+                                      (updateBridge)
+                                      (send updateFirmwareMessage set-label bridgeError))]))
+
+; Windows Menu
+(define hueWindowMenuWindows (new menu% [parent hueWindowMenuBar]
+                                  [label "Windows"]))
+(define hueWindowMenuWindowsNum1 (new menu-item% [parent hueWindowMenuWindows]
+                                      [label (send hueWindow get-label)]
+                                      [callback (lambda (menu event)
+                                                  (send hueWindow iconize #f))]
+                                      [shortcut #\1]
+                                      [shortcut-prefix '(cmd)]))
+(define hueWindowMenuWindowsNum2 (new menu-item% [parent hueWindowMenuWindows]
+                                      [label (send statusWindow get-label)]
+                                      [callback (lambda (menu event)
+                                                  (send statusWindow iconize #f))]
+                                      [shortcut #\2]
+                                      [shortcut-prefix '(cmd)]))
+(define hueWindowMenuWindowsNum3 (new menu-item% [parent hueWindowMenuWindows]
+                                      [label (send allLights get-label)]
+                                      [callback (lambda (menu event)
+                                                  (send allLights iconize #f))]
+                                      [shortcut #\3]
+                                      [shortcut-prefix '(cmd)]))
+(define hueWindowMenuWindowsNum4 (new menu-item% [parent hueWindowMenuWindows]
+                                      [label (send cueListWindow get-label)]
+                                      [callback (lambda (menu event)
+                                                  (send cueListWindow iconize #f))]
+                                      [shortcut #\4]
+                                      [shortcut-prefix '(cmd)]))
+
 ; Show the Windows
 
-(send hueWindow show #t)
 (send statusWindow show #t)
 (send allLights show #t)
 (send cueListWindow show #t)
+(send hueWindow show #t)
