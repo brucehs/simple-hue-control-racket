@@ -100,9 +100,12 @@
                                     'modelid "LCT001"
                                     'swversion "")])
     (init-field [parent '(object:cueList%)])
+    ; Time is in milliseconds. Does not need to be adjusted when sent to bridge.
+    (init-field [time 4])
     (define/public (get-label) label)
     (define/public (get-parent) parent)
     (define/public (get-json) jsonResponse)
+    (define/public (get-time) time)
     (define/public (set-label newLabel)
       (set-field! label this newLabel))
     (define/public (set-json newJson)
@@ -110,7 +113,14 @@
     (define/public (set-parent parentCueList)
       (set-field! children parentCueList 
                   (append (get-field children parentCueList) (list this)))
-      (set-field! parent this parentCueList))))
+      (set-field! parent this parentCueList))
+    (define/public (set-time newTime)
+      (cond
+        ((equal? (string->number newTime) #f)
+         (set-field! time this 0))
+        (else
+         (set-field! time this
+                     (inexact->exact (* (string->number newTime) 10))))))))
 
 ; Hack for Workshop: Create a main Cue List.
 
@@ -491,6 +501,8 @@
                               [min-width 200]))
 (define saveCueNameField (new text-field% [parent saveCueNamePanel]
                               [label "Cue Name:"]))
+(define saveCueTimeField (new text-field% [parent saveCueNamePanel]
+                              [label "Cue Time:"]))
 
 (define saveCueButtonPanel (new horizontal-panel% [parent saveCueDialog]
                                 [alignment '(right center)]
@@ -502,7 +514,8 @@
                                          (let [(newCueName (send saveCueNameField get-value))]
                                            (send (new cue% [label newCueName]) set-parent mainList)
                                            (let [(newCuePosition (- (length (send mainList get-children)) 1))]
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus)))
+                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus))
+                                             (send (list-ref (send mainList get-children) newCuePosition) set-time (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
                                            (send saveCueDialog show #f)))]))
@@ -855,7 +868,7 @@
     (hash-ref 
      (hash-ref 
       (send 
-       (list-ref (send cueList get-children) (- cueNumber 1)) 
+       (list-ref (send cueList get-children) cueNumber) 
        get-json) 
       (string->symbol (number->string lightNumber)))
      'state)))
@@ -882,12 +895,13 @@
                               'bri (hash-ref lightState 'bri)
                               'hue (hash-ref lightState 'hue)
                               'sat (hash-ref lightState 'sat)
-                              'transitiontime cueTime))
+                              'transitiontime (send (list-ref (send cueList get-children) cueNumber) get-time)))
                        #:headers
                        '("Content-Type: application/json")
                        #:content-decode '(json))])
           (set! bridgeResponse (read-json jsonResponse))
-          (updateAllLights 1 16))))))
+          (updateAllLights 1 16)
+          bridgeResponse)))))
 
 ; The cue% object remains. I am unsure how to mark it for Garbage Collection.
 
@@ -895,7 +909,8 @@
   (lambda (cueList position)
     (let-values ([(cueList1 cueList2)
                   (split-at (send cueList get-children) position)])
-      (send cueList set-children (append cueList1 (drop cueList2 1))))))
+      (send cueList set-children (append cueList1 (drop cueList2 1))))
+    (collect-garbage)))
 
 ; Create a Window for the Cue List.
 
@@ -932,7 +947,7 @@
                            [callback (lambda (button event)
                                        (restoreCue 
                                         mainList 
-                                        (+ (send cueChoice get-selection) 1) 
+                                        (send cueChoice get-selection) 
                                         17))]))
 
 ; Menu Bars
@@ -954,9 +969,9 @@
                                                      (send userNameDialog show #t))]))
 
 (define hueWindowMenuBridgeUpdateFirmware (new menu-item% [parent hueWindowMenuBridge]
-                                         [label "Update Bridge Firmware"]
-                                         [callback (lambda (menu event)
-                                                     (send updateFirmwareDialog show #t))]))
+                                               [label "Update Bridge Firmware"]
+                                               [callback (lambda (menu event)
+                                                           (send updateFirmwareDialog show #t))]))
 
 ; Set Bridge Address Dialog
 (define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
@@ -1154,28 +1169,28 @@
           (else (set! bridgeError portalError)))))))
 
 (define updateFirmwareDialog (new dialog% [label "Update Bridge Firmware"]
-                            [min-width 350]
-                            [min-height 100]))
+                                  [min-width 350]
+                                  [min-height 100]))
 
 (define updateFirmwareMessagePanel (new vertical-panel% [parent updateFirmwareDialog]
-                                  [alignment '(center center)]
-                                  [min-width 200]))
+                                        [alignment '(center center)]
+                                        [min-width 200]))
 (define updateFirmwareMessage (new message% [parent updateFirmwareMessagePanel]
-                             [label "Update Firmware? Bridge Must Be Connected to the Internet."]
-                             [horiz-margin 20]))
+                                   [label "Update Firmware? Bridge Must Be Connected to the Internet."]
+                                   [horiz-margin 20]))
 
 (define updateFirmwarePanel (new horizontal-panel% [parent updateFirmwareDialog]
-                              [alignment '(center center)]
-                              [min-width 290]))
+                                 [alignment '(center center)]
+                                 [min-width 290]))
 (define closeUpdateFirmware (new button% [parent updateFirmwarePanel]
-                            [label "Close"]
-                            [callback (lambda (button event)
-                                        (send updateFirmwareDialog show #f))]))
+                                 [label "Close"]
+                                 [callback (lambda (button event)
+                                             (send updateFirmwareDialog show #f))]))
 (define updateFirmware (new button% [parent updateFirmwarePanel]
-                          [label "Update"]
-                          [callback (lambda (button event)
-                                      (updateBridge)
-                                      (send updateFirmwareMessage set-label bridgeError))]))
+                            [label "Update"]
+                            [callback (lambda (button event)
+                                        (updateBridge)
+                                        (send updateFirmwareMessage set-label bridgeError))]))
 
 ; Windows Menu
 (define hueWindowMenuWindows (new menu% [parent hueWindowMenuBar]
