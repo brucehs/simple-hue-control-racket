@@ -10,40 +10,45 @@
 ; Create Bridge Address and User Name files if they do not exist. Otherwise,
 ; open the files.
 
-; Yes, this is very amateur that one configuration value is set per file. At
-; some point, this should be updated so the values are stored in and read from
-; a plist file in ~/Library/Preferences.
+; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
+; file within the Application Support directory. Ideally, this will eventually
+; become a plist file within ~/Libarary/Preferences, but I am unable to get
+; xml/plist to work at the moment.
 
-(define supportDirectory 
-  (string->path (string-append 
-                 (path->string (find-system-path 'home-dir)) 
-                 "Library/Application Support/Simple Hue Control/")))
+; Long-term TUDU: Test supportDirectory on Linux and Windows.
 
-(define bridgeAddressFile
-  (build-path supportDirectory (string->path "Bridge Address.shc")))
+(define supportDirectory
+  (let ([system (system-type 'os)])
+    (cond
+      ((equal? system 'macosx)
+       (string->path (string-append 
+                      (path->string (find-system-path 'home-dir)) 
+                      "Library/Application Support/Simple Hue Control/")))
+      ((equal? system 'unix)
+       (string->path (string-append
+                      (path->string (find-system-path 'doc-dir))
+                      "Simple Hue Control/Settings/")))
+      ((equal? system 'windows)
+       (string->path (string-append
+                      (path->string (find-system-path 'doc-dir))
+                      "Simple Hue Control\\Settings\\"))))))
 
-(define userDeviceNameFile
-  (build-path supportDirectory (string->path "User Device Name.shc")))
-
-(define bridgeUserNameFile
-  (build-path supportDirectory (string->path "Bridge User Name.shc")))
-
-(define deviceTypeFile
-  (build-path supportDirectory (string->path "Device Type.shc")))
+(define bridgeSettingsFile
+  (build-path supportDirectory (string->path "Bridge Settings.shc")))
 
 (cond
   ((not (directory-exists? supportDirectory))
    (make-directory supportDirectory)))
 
-(define addressWritePort (open-output-file bridgeAddressFile #:mode 'text #:exists 'can-update))
-(define deviceNameWritePort (open-output-file userDeviceNameFile #:mode 'text #:exists 'can-update))
-(define userNameWritePort (open-output-file bridgeUserNameFile #:mode 'text #:exists 'can-update))
-(define deviceTypeWritePort (open-output-file deviceTypeFile #:mode 'text #:exists 'can-update))
-
-(define addressReadPort (open-input-file bridgeAddressFile #:mode 'text))
-(define deviceNameReadPort (open-input-file userDeviceNameFile #:mode 'text))
-(define userNameReadPort (open-input-file bridgeUserNameFile #:mode 'text))
-(define deviceTypeReadPort (open-input-file deviceTypeFile #:mode 'text))
+(cond
+  ((not (file-exists? bridgeSettingsFile))
+   (write-to-file
+    (hash 'bridgeAddress "0.0.0.0"
+          'userDevice ""
+          'hueUserName ""
+          'appname "simple_hue_control"
+          'deviceType "")
+    bridgeSettingsFile)))
 
 ; Bridge Communication Variables. Communication will not work until 
 ; these are set by the user.
@@ -51,17 +56,11 @@
 ; Need to set up error handling if the user tries to use the application
 ; before setting these.
 
-(define fileEmpty?
-  (lambda (file)
-    (cond
-      ((equal? (file->string file) "")(file->string file))
-      (else (file->value file)))))
-
-(define bridgeAddress (fileEmpty? bridgeAddressFile))
-(define userDeviceName (fileEmpty? userDeviceNameFile))
-(define hueUserName (fileEmpty? bridgeUserNameFile))
-(define deviceType (fileEmpty? deviceTypeFile))
-(define appName "simple_hue_control")
+(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridgeAddress))
+(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'userDevice))
+(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hueUserName))
+(define deviceType (hash-ref (file->value bridgeSettingsFile) 'deviceType))
+(define appName (hash-ref (file->value bridgeSettingsFile) 'appName))
 
 ; Cue List and Cue Classes
 ; Perhaps Scenes could be used for Cueing instead. They can have the
@@ -995,11 +994,13 @@
                                [label "Save"]
                                [callback (lambda (button event)
                                            (set! bridgeAddress (send bridgeAddressField get-value))
-                                           (with-output-to-file bridgeAddressFile
-                                             (lambda () (write (send bridgeAddressField get-value)))
-                                             #:mode 'text
-                                             #:exists 'replace)
-                                           (send bridgeAddressDialog show #f))]))
+                                           (let ([bridgeSettings (make-hash (hash->list (file->value bridgeSettingsFile)))])
+                                             (hash-set! bridgeSettings 'bridgeAddress (send bridgeAddressField get-value))
+                                             (with-output-to-file bridgeSettingsFile
+                                               (lambda () (write bridgeSettings))
+                                               #:mode 'text
+                                               #:exists 'replace)
+                                             (send bridgeAddressDialog show #f)))]))
 
 ; Set Bridge User Name Dialog
 
@@ -1058,31 +1059,36 @@
 (define saveUserName (new button% [parent setUserNamePanel]
                           [label "Set"]
                           [callback (lambda (button event)
-                                      (set! userDeviceName 
-                                            (send userDeviceNameField get-value))
-                                      (with-output-to-file userDeviceNameFile
-                                        (lambda () (write (send userDeviceNameField get-value)))
-                                        #:mode 'text
-                                        #:exists 'replace)
-                                      (set! deviceType (string-append appName (string-append "#" userDeviceName)))
-                                      (with-output-to-file deviceTypeFile
-                                        (lambda () (write deviceType))
-                                        #:mode 'text
-                                        #:exists 'replace)
-                                      (setUserName! deviceType)
-                                      (cond
-                                        ((equal? bridgeError "")
-                                         (with-output-to-file bridgeUserNameFile
-                                           (lambda () (write hueUserName))
-                                           #:mode 'text
-                                           #:exists 'replace)
-                                         (send userNameDialog show #f))
-                                        (else
-                                         (send userNameMessage set-label
-                                               (string-append 
-                                                bridgeError 
-                                                ". Enter Device Name (ie: My Macbook).
- \\n Press Link Button on Bridge. Click \"Set\".")))))]))
+                                      (let ([bridgeSettings
+                                             (make-hash
+                                              (hash->list
+                                               (file->value bridgeSettingsFile)))])
+                                        (set! userDeviceName 
+                                              (send userDeviceNameField get-value))
+                                        (hash-set! bridgeSettings
+                                                   'userDevice
+                                                   userDeviceName)
+                                        (set! deviceType (string-append appName (string-append "#" userDeviceName)))
+                                        (hash-set! bridgeSettings
+                                                   'deviceType
+                                                   deviceType)
+                                        (setUserName! deviceType)
+                                        (cond
+                                          ((equal? bridgeError "")
+                                           (hash-set! bridgeSettings
+                                                      'hueUserName
+                                                      hueUserName)
+                                           (with-output-to-file bridgeSettingsFile
+                                             (lambda () (write bridgeSettings))
+                                             #:mode 'text
+                                             #:exists 'replace)
+                                           (send userNameDialog show #f))
+                                          (else
+                                           (send userNameMessage set-label
+                                                 (string-append 
+                                                  bridgeError 
+                                                  ". Enter Device Name (ie: My Macbook).
+ \\n Press Link Button on Bridge. Click \"Set\"."))))))]))
 
 ; Bridge Update Dialog
 
