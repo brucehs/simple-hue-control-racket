@@ -127,86 +127,6 @@
     (updateSat state)
     (updateLastTransitiontime time)))
 
-; We also need to be able to check on the state of all the lights.
-; This is for "All Lights" Window. Pull data from the bridge.
-
-(define updateAllLights
-  (lambda (firstLight lastLight)
-    (for ([i (in-range firstLight (+ lastLight 1))])
-      (let-values ([(httpStatus httpHeader jsonResponse)
-                    (http-sendrecv
-                     bridgeAddress (string-append 
-                                    (string-append 
-                                     (string-append "/api/" hueUserName) 
-                                     "/lights/") 
-                                    (number->string i))
-                     #:method 'GET
-                     #:headers
-                     '("Content-Type: application/json")
-                     #:content-decode '(json))])
-        (let ([lightState (read-json jsonResponse)])
-          (cond
-            ((<= i 8)
-             (cond
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
-                (send 
-                 (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "T")))
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
-                (send 
-                 (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "F"))))
-             (send 
-              (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 1) 
-              set-label 
-              (string-append initialBriMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'bri))))
-             (send 
-              (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 2) 
-              set-label 
-              (string-append initialHueMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'hue))))
-             (send 
-              (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 3) 
-              set-label 
-              (string-append initialSatMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'sat)))))
-            ((and (>= i 9) (<= i 16))
-             (cond
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
-                (send 
-                 (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "T")))
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
-                (send 
-                 (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "F"))))
-             (send 
-              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 1) 
-              set-label 
-              (string-append initialBriMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'bri))))
-             (send 
-              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 2) 
-              set-label 
-              (string-append initialHueMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'hue))))
-             (send 
-              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 3) 
-              set-label 
-              (string-append initialSatMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'sat)))))))))))
-
 ; Now it is time to create the main interaction window.
 
 (define hueWindow (new frame% [label "Simple Hue Control"]))
@@ -408,7 +328,13 @@
                          [callback (lambda (button event)
                                      (goLights (lightList) lightingState cueTime bridgeAddress hueUserName)
                                      (updateLastStatus (lightList) lightingState cueTime)
-                                     (updateAllLights 1 16))]))
+                                     (updateAllLights
+                                      1
+                                      16
+                                      lights1To8
+                                      lights9To16
+                                      bridgeAddress
+                                      hueUserName))]))
 
 ; Now we need a Status Window.
 
@@ -451,10 +377,7 @@
 (define allLights (new frame% [label "All Lights"]
                        [min-width 1000]))
 
-(define initialOnMessage "On?: ")
-(define initialBriMessage "Bri: ")
-(define initialHueMessage "Hue: ")
-(define initialSatMessage "Sat: ")
+
 
 ; The first eight lights
 
@@ -759,6 +682,13 @@
                                         mainList 
                                         (send cueChoice get-selection) 
                                         17
+                                        bridgeAddress
+                                        hueUserName)
+                                       (updateAllLights
+                                        1
+                                        16
+                                        lights1To8
+                                        lights9To16
                                         bridgeAddress
                                         hueUserName))]))
 

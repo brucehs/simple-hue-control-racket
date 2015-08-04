@@ -69,6 +69,91 @@
       (set! bridgeResponse bridgeResponse2)
       (reverse bridgeResponse2))))
 
+; Procedure to update information about lighting state of every light.
+; It pulls its data from the bridge.
+
+(define initialOnMessage "On?: ")
+(define initialBriMessage "Bri: ")
+(define initialHueMessage "Hue: ")
+(define initialSatMessage "Sat: ")
+
+(define updateAllLights
+  (lambda (firstLight lastLight lightLineOne lightLineTwo address userName)
+    (for ([i (in-range firstLight (+ lastLight 1))])
+      (let-values ([(httpStatus httpHeader jsonResponse)
+                    (http-sendrecv
+                     address (string-append 
+                              (string-append 
+                               (string-append "/api/" userName) 
+                               "/lights/") 
+                              (number->string i))
+                     #:method 'GET
+                     #:headers
+                     '("Content-Type: application/json")
+                     #:content-decode '(json))])
+        (let ([lightState (read-json jsonResponse)])
+          (cond
+            ((<= i 8)
+             (cond
+               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
+                (send 
+                 (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 0) 
+                 set-label 
+                 (string-append initialOnMessage "T")))
+               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
+                (send 
+                 (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 0) 
+                 set-label 
+                 (string-append initialOnMessage "F"))))
+             (send 
+              (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 1) 
+              set-label 
+              (string-append initialBriMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'bri))))
+             (send 
+              (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 2) 
+              set-label 
+              (string-append initialHueMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'hue))))
+             (send 
+              (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 3) 
+              set-label 
+              (string-append initialSatMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'sat)))))
+            ((and (>= i 9) (<= i 16))
+             (cond
+               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
+                (send 
+                 (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 0) 
+                 set-label 
+                 (string-append initialOnMessage "T")))
+               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
+                (send 
+                 (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 0) 
+                 set-label 
+                 (string-append initialOnMessage "F"))))
+             (send 
+              (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 1) 
+              set-label 
+              (string-append initialBriMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'bri))))
+             (send 
+              (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 2) 
+              set-label 
+              (string-append initialHueMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'hue))))
+             (send 
+              (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 3) 
+              set-label 
+              (string-append initialSatMessage 
+                             (number->string 
+                              (hash-ref (hash-ref lightState 'state) 'sat)))))))))))
+
 ; Procedures for Saving, Restoring, and Deleting Cues.
 
 ; Procedure for getting the current status of the bridge. This is used to
@@ -132,7 +217,6 @@
                        '("Content-Type: application/json")
                        #:content-decode '(json))])
           (set! bridgeResponse (read-json jsonResponse)))))))
-;(updateAllLights 1 16)))))) -- comment out until updateAllLights is moved to module
 
 ; I believe the cue% object remains. I am unsure how to mark it
 ; for Garbage Collection.
