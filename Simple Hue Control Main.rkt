@@ -66,7 +66,7 @@
     (getHuesToCue huesToCue lightsToCue)))
 
 ; Next is getting the lighting state for the cue.
-(define lightingState '(0 1 0 0))
+(define lightingState '(#f 1 0 0))
 
 ; We need to update the Status Window with the lights just used.
 ; This is for the "Lighting Status" Window. Data does not come from
@@ -91,8 +91,8 @@
 (define updateOn
   (lambda (state)
     (cond
-      ((= (list-ref state 0) 0) (set! lastOnMessage "On?: TRUE"))
-      ((= (list-ref state 0) 1) (set! lastOnMessage "On?: FALSE"))
+      ((equal? (list-ref state 0) #t) (set! lastOnMessage "On?: TRUE"))
+      ((equal? (list-ref state 0) #f) (set! lastOnMessage "On?: FALSE"))
       (else (set! lastOnMessage "On? ")))
     (send lastOnDisplay set-label lastOnMessage)))
 
@@ -243,7 +243,7 @@
                                     [label "Lighting State!"]
                                     [callback (lambda (button event)
                                                 (set! lightingState (list 
-                                                                     (send lightsChange get-selection) 
+                                                                     (onOrOff? (send lightsChange get-selection)) 
                                                                      (send lightsIntensity get-value) 
                                                                      (send lightsColor get-value) 
                                                                      (send lightsSaturation get-value))))]))
@@ -376,8 +376,6 @@
 
 (define allLights (new frame% [label "All Lights"]
                        [min-width 1000]))
-
-
 
 ; The first eight lights
 

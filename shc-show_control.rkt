@@ -6,6 +6,7 @@
 
 ; Provide Main Light Adjustments.
 (provide bridgeResponse
+         onOrOff?
          goLights)
 
 ; Provide Updating Light Status.
@@ -25,10 +26,10 @@
 
 ; Translates lightingState on/off value from 0 or 1 to #t or #f.
 
-(define getOn
-  (lambda (lst)
+(define onOrOff?
+  (lambda (state)
     (cond
-      ((equal? 0 (car lst)) #t)
+      ((equal? state 0) #t)
       (else #f))))
 
 ; Procedure for sending a a lighting state to the Bridge.
@@ -56,7 +57,7 @@
                        #:method 'PUT
                        #:data
                        (jsexpr->string
-                        (hash 'on (getOn state)
+                        (hash 'on (list-ref state 0)
                               'bri (list-ref state 1)
                               'hue (list-ref state 2)
                               'sat (list-ref state 3)
