@@ -4,9 +4,19 @@
          net/uri-codec
          json)
 
+; Provide Main Light Adjustments.
 (provide bridgeResponse
-         goLights
-         retrieveBridgeStatus
+         goLights)
+
+; Provide Updating Light Status.
+(provide initialOnMessage
+         initialBriMessage
+         initialHueMessage
+         initialSatMessage
+         updateAllLights)
+
+; Provide Cue Manipulation.
+(provide retrieveBridgeStatus
          restoreCue
          deleteCue)
 
