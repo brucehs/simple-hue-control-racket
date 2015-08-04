@@ -4,7 +4,8 @@
          net/uri-codec
          json
          "shc-classes.rkt"
-         "shc-settings.rkt")
+         "shc-settings.rkt"
+         "shc-show_control.rkt")
 
 (compile-allow-set!-undefined #t)
 
@@ -66,41 +67,6 @@
 
 ; Next is getting the lighting state for the cue.
 (define lightingState '(0 1 0 0))
-
-(define getOn
-  (lambda (lst)
-    (cond
-      ((equal? 0 (car lst)) #t)
-      (else #f))))
-
-; We need to send the Cue to the Bridge.
-
-(define bridgeResponse "")
-
-(define goCue
-  (lambda (lights state time)
-    (for ([i (in-range (length lights))])
-      (let-values ([(httpStatus httpHeader jsonResponse)
-                    (http-sendrecv
-                     bridgeAddress (string-append 
-                                    (string-append 
-                                     (string-append 
-                                      (string-append "/api/" hueUserName) 
-                                      "/lights/") 
-                                     (number->string (list-ref lights i))) 
-                                    "/state")
-                     #:method 'PUT
-                     #:data
-                     (jsexpr->string
-                      (hash 'on (getOn state)
-                            'bri (list-ref state 1)
-                            'hue (list-ref state 2)
-                            'sat (list-ref state 3)
-                            'transitiontime cueTime))
-                     #:headers
-                     '("Content-Type: application/json")
-                     #:content-decode '(json))])
-        (set! bridgeResponse (read-json jsonResponse))))))
 
 ; We need to update the Status Window with the lights just used.
 ; This is for the "Lighting Status" Window. Data does not come from
@@ -440,7 +406,7 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goCue (lightList) lightingState cueTime)
+                                     (goLights (lightList) lightingState cueTime bridgeAddress hueUserName)
                                      (updateLastStatus (lightList) lightingState cueTime)
                                      (updateAllLights 1 16))]))
 
