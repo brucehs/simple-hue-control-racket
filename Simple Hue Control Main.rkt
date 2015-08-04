@@ -2,7 +2,10 @@
 
 (require net/http-client
          net/uri-codec
-         json)
+         json
+         "shc-classes.rkt"
+         "shc-settings.rkt"
+         "shc-show_control.rkt")
 
 (compile-allow-set!-undefined #t)
 
@@ -10,45 +13,9 @@
 ; Create Bridge Address and User Name files if they do not exist. Otherwise,
 ; open the files.
 
-; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
-; file within the Application Support directory. Ideally, this will eventually
-; become a plist file within ~/Libarary/Preferences, but I am unable to get
-; xml/plist to work at the moment.
+(supportDirectoryExists?)
 
-; Long-term TUDU: Test supportDirectory on Linux and Windows.
-
-(define supportDirectory
-  (let ([system (system-type 'os)])
-    (cond
-      ((equal? system 'macosx)
-       (string->path (string-append 
-                      (path->string (find-system-path 'home-dir)) 
-                      "Library/Application Support/Simple Hue Control/")))
-      ((equal? system 'unix)
-       (string->path (string-append
-                      (path->string (find-system-path 'doc-dir))
-                      "Simple Hue Control/Settings/")))
-      ((equal? system 'windows)
-       (string->path (string-append
-                      (path->string (find-system-path 'doc-dir))
-                      "Simple Hue Control\\Settings\\"))))))
-
-(define bridgeSettingsFile
-  (build-path supportDirectory (string->path "Bridge Settings.shc")))
-
-(cond
-  ((not (directory-exists? supportDirectory))
-   (make-directory supportDirectory)))
-
-(cond
-  ((not (file-exists? bridgeSettingsFile))
-   (write-to-file
-    (hash 'bridgeAddress "0.0.0.0"
-          'userDevice ""
-          'hueUserName ""
-          'appName "simple_hue_control"
-          'deviceType "")
-    bridgeSettingsFile)))
+(bridgeSettingsFileExists?)
 
 ; Bridge Communication Variables. Communication will not work until 
 ; these are set by the user.
@@ -62,138 +29,16 @@
 (define deviceType (hash-ref (file->value bridgeSettingsFile) 'deviceType))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'appName))
 
-; Cue List and Cue Classes
-; Perhaps Scenes could be used for Cueing instead. They can have the
-; transitiontime value attached. However, the state of the scene is not
-; available via an API call. It may be better to ask the user to specify
-; a time upon saving a cue.
-
-(define cueList%
-  (class object%
-    (super-new)
-    (init-field [label ""])
-    (init-field [children '()])
-    (define/public (get-label) label)
-    (define/public (get-children) children)
-    (define/public (set-children listOfChildren)
-      (set-field! children this listOfChildren))))
-
-(define cue%
-  (class object%
-    (super-new)
-    (define stateJson     (hash
-                           'on #t
-                           'bri 0
-                           'hue 0
-                           'sat 0
-                           'xy (list 0 0)
-                           'ct 0
-                           'alert "none"
-                           'effect "none"
-                           'colormode "hs"
-                           'reachable #t))
-    (init-field [label ""])
-    (init-field [jsonResponse (hash 'light stateJson
-                                    'type "Extended color light"
-                                    'name "Generic Name"
-                                    'modelid "LCT001"
-                                    'swversion "")])
-    (init-field [parent '(object:cueList%)])
-    ; Time is in milliseconds. Does not need to be adjusted when sent to bridge.
-    (init-field [time 4])
-    (define/public (get-label) label)
-    (define/public (get-parent) parent)
-    (define/public (get-json) jsonResponse)
-    (define/public (get-time) time)
-    (define/public (set-label newLabel)
-      (set-field! label this newLabel))
-    (define/public (set-json newJson)
-      (set-field! jsonResponse this newJson))
-    (define/public (set-parent parentCueList)
-      (set-field! children parentCueList 
-                  (append (get-field children parentCueList) (list this)))
-      (set-field! parent this parentCueList))
-    (define/public (set-time newTime)
-      (cond
-        ((equal? (string->number newTime) #f)
-         (set-field! time this 0))
-        (else
-         (set-field! time this
-                     (inexact->exact (* (string->number newTime) 10))))))))
-
 ; Hack for Workshop: Create a main Cue List.
 
 (define mainList (new cueList% [label "Main List"]))
 
 ; Creating the procedures we will need.
 
-; First is getting the lights we need to cue.
+; Initialize variables for lights to send commands to and the lighting
+; state to send.
 (define lightsToCue '(#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
-
-(define getLightsRow 
-  (lambda (panelContents)
-    (cond
-      ((null? panelContents) (quote ()))
-      (else (cons (send (car panelContents) get-value) (getLightsRow (cdr panelContents)))))))
-
-(define getLights 
-  (lambda (firstRow secondRow)
-    (append (getLightsRow firstRow) (getLightsRow secondRow))))
-
-(define huesToCue
-  (lambda (lightList)
-    (cond
-      ((null? lightList) (quote ()))
-      ((eq? (car lightList) #t) (cons (length lightList) (huesToCue (cdr lightList))))
-      (else (huesToCue (cdr lightList))))))
-
-(define getHuesToCue
-  (lambda (proc lst)
-    (map (lambda (number)
-           (- 17 number))
-         (proc lst))))
-
-(define lightList
-  (lambda ()
-    (getHuesToCue huesToCue lightsToCue)))
-
-; Next is getting the lighting state for the cue.
-(define lightingState '(0 1 0 0))
-
-(define getOn
-  (lambda (lst)
-    (cond
-      ((equal? 0 (car lst)) #t)
-      (else #f))))
-
-; We need to send the Cue to the Bridge.
-
-(define bridgeResponse "")
-
-(define goCue
-  (lambda (lights state time)
-    (for ([i (in-range (length lights))])
-      (let-values ([(httpStatus httpHeader jsonResponse)
-                    (http-sendrecv
-                     bridgeAddress (string-append 
-                                    (string-append 
-                                     (string-append 
-                                      (string-append "/api/" hueUserName) 
-                                      "/lights/") 
-                                     (number->string (list-ref lights i))) 
-                                    "/state")
-                     #:method 'PUT
-                     #:data
-                     (jsexpr->string
-                      (hash 'on (getOn state)
-                            'bri (list-ref state 1)
-                            'hue (list-ref state 2)
-                            'sat (list-ref state 3)
-                            'transitiontime cueTime))
-                     #:headers
-                     '("Content-Type: application/json")
-                     #:content-decode '(json))])
-        (set! bridgeResponse (read-json jsonResponse))))))
+(define lightingState '(#f 1 0 0))
 
 ; We need to update the Status Window with the lights just used.
 ; This is for the "Lighting Status" Window. Data does not come from
@@ -218,8 +63,8 @@
 (define updateOn
   (lambda (state)
     (cond
-      ((= (list-ref state 0) 0) (set! lastOnMessage "On?: TRUE"))
-      ((= (list-ref state 0) 1) (set! lastOnMessage "On?: FALSE"))
+      ((equal? (list-ref state 0) #t) (set! lastOnMessage "On?: TRUE"))
+      ((equal? (list-ref state 0) #f) (set! lastOnMessage "On?: FALSE"))
       (else (set! lastOnMessage "On? ")))
     (send lastOnDisplay set-label lastOnMessage)))
 
@@ -253,86 +98,6 @@
     (updateHue state)
     (updateSat state)
     (updateLastTransitiontime time)))
-
-; We also need to be able to check on the state of all the lights.
-; This is for "All Lights" Window. Pull data from the bridge.
-
-(define updateAllLights
-  (lambda (firstLight lastLight)
-    (for ([i (in-range firstLight (+ lastLight 1))])
-      (let-values ([(httpStatus httpHeader jsonResponse)
-                    (http-sendrecv
-                     bridgeAddress (string-append 
-                                    (string-append 
-                                     (string-append "/api/" hueUserName) 
-                                     "/lights/") 
-                                    (number->string i))
-                     #:method 'GET
-                     #:headers
-                     '("Content-Type: application/json")
-                     #:content-decode '(json))])
-        (let ([lightState (read-json jsonResponse)])
-          (cond
-            ((<= i 8)
-             (cond
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
-                (send 
-                 (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "T")))
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
-                (send 
-                 (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "F"))))
-             (send 
-              (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 1) 
-              set-label 
-              (string-append initialBriMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'bri))))
-             (send 
-              (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 2) 
-              set-label 
-              (string-append initialHueMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'hue))))
-             (send 
-              (list-ref (send (list-ref (send lights1To8 get-children) (- i 1)) get-children) 3) 
-              set-label 
-              (string-append initialSatMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'sat)))))
-            ((and (>= i 9) (<= i 16))
-             (cond
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
-                (send 
-                 (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "T")))
-               ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
-                (send 
-                 (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 0) 
-                 set-label 
-                 (string-append initialOnMessage "F"))))
-             (send 
-              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 1) 
-              set-label 
-              (string-append initialBriMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'bri))))
-             (send 
-              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 2) 
-              set-label 
-              (string-append initialHueMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'hue))))
-             (send 
-              (list-ref (send (list-ref (send lights9To16 get-children) (- i 9)) get-children) 3) 
-              set-label 
-              (string-append initialSatMessage 
-                             (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'sat)))))))))))
 
 ; Now it is time to create the main interaction window.
 
@@ -450,7 +215,7 @@
                                     [label "Lighting State!"]
                                     [callback (lambda (button event)
                                                 (set! lightingState (list 
-                                                                     (send lightsChange get-selection) 
+                                                                     (onOrOff? (send lightsChange get-selection)) 
                                                                      (send lightsIntensity get-value) 
                                                                      (send lightsColor get-value) 
                                                                      (send lightsSaturation get-value))))]))
@@ -507,23 +272,24 @@
                                 [alignment '(right center)]
                                 [min-width 200]))
 
+(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
+                                 [label "Cancel"]
+                                 [callback (lambda (button event)
+                                             (send saveCueNameField set-value "")
+                                             (send saveCueDialog show #f))]))
+
 (define saveCueOKButton (new button% [parent saveCueButtonPanel]
                              [label "Save"]
                              [callback (lambda(button event)
                                          (let [(newCueName (send saveCueNameField get-value))]
                                            (send (new cue% [label newCueName]) set-parent mainList)
                                            (let [(newCuePosition (- (length (send mainList get-children)) 1))]
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus))
+                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus bridgeAddress hueUserName))
                                              (send (list-ref (send mainList get-children) newCuePosition) set-time (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
                                            (send saveCueDialog show #f)))]))
 
-(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send saveCueNameField set-value "")
-                                             (send saveCueDialog show #f))]))
 ; Create Go Button
 
 (define cueGoPanel (new horizontal-panel% [parent cueGoAndSavePanel]
@@ -533,9 +299,15 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goCue (lightList) lightingState cueTime)
-                                     (updateLastStatus (lightList) lightingState cueTime)
-                                     (updateAllLights 1 16))]))
+                                     (goLights (lightList lightsToCue) lightingState cueTime bridgeAddress hueUserName)
+                                     (updateLastStatus (lightList lightsToCue) lightingState cueTime)
+                                     (updateAllLights
+                                      1
+                                      16
+                                      lights1To8
+                                      lights9To16
+                                      bridgeAddress
+                                      hueUserName))]))
 
 ; Now we need a Status Window.
 
@@ -577,11 +349,6 @@
 
 (define allLights (new frame% [label "All Lights"]
                        [min-width 1000]))
-
-(define initialOnMessage "On?: ")
-(define initialBriMessage "Bri: ")
-(define initialHueMessage "Hue: ")
-(define initialSatMessage "Sat: ")
 
 ; The first eight lights
 
@@ -849,67 +616,6 @@
                         [label initialSatMessage]
                         [auto-resize #t]))
 
-; Procedures for Saving, Restoring, and Deleting Cues.
-
-(define retrieveBridgeStatus
-  (lambda ()
-    (let-values ([(httpStatus httpHeader jsonResponse)
-                  (http-sendrecv
-                   bridgeAddress (string-append (string-append "/api/" hueUserName) "/lights/")
-                   #:method 'GET
-                   #:headers
-                   '("Content-Type: application/json")
-                   #:content-decode '(json))])
-      (read-json jsonResponse))))
-
-(define getOneJsonState
-  (lambda (cueList cueNumber lightNumber)
-    (hash-ref 
-     (hash-ref 
-      (send 
-       (list-ref (send cueList get-children) cueNumber) 
-       get-json) 
-      (string->symbol (number->string lightNumber)))
-     'state)))
-
-; This procedure uses the last time set in the main control window.
-
-(define restoreCue
-  (lambda (cueList cueNumber numberOfLights)
-    (for ([i (in-range 1 numberOfLights)])
-      (let ([lightState (getOneJsonState cueList cueNumber i)])
-        (let-values ([(httpStatus httpHeader jsonResponse)
-                      (http-sendrecv
-                       bridgeAddress (string-append 
-                                      (string-append 
-                                       (string-append 
-                                        (string-append "/api/" hueUserName) 
-                                        "/lights/") 
-                                       (number->string i)) 
-                                      "/state")
-                       #:method 'PUT
-                       #:data
-                       (jsexpr->string
-                        (hash 'on (hash-ref lightState 'on)
-                              'bri (hash-ref lightState 'bri)
-                              'hue (hash-ref lightState 'hue)
-                              'sat (hash-ref lightState 'sat)
-                              'transitiontime (send (list-ref (send cueList get-children) cueNumber) get-time)))
-                       #:headers
-                       '("Content-Type: application/json")
-                       #:content-decode '(json))])
-          (set! bridgeResponse (read-json jsonResponse))
-          (updateAllLights 1 16))))))
-
-; The cue% object remains. I am unsure how to mark it for Garbage Collection.
-
-(define deleteCue
-  (lambda (cueList position)
-    (let-values ([(cueList1 cueList2)
-                  (split-at (send cueList get-children) position)])
-      (send cueList set-children (append cueList1 (drop cueList2 1))))
-    (collect-garbage)))
-
 ; Create a Window for the Cue List.
 
 (define cueListWindow (new frame% [label "Main Cue List"]))
@@ -946,7 +652,16 @@
                                        (restoreCue 
                                         mainList 
                                         (send cueChoice get-selection) 
-                                        17))]))
+                                        17
+                                        bridgeAddress
+                                        hueUserName)
+                                       (updateAllLights
+                                        1
+                                        16
+                                        lights1To8
+                                        lights9To16
+                                        bridgeAddress
+                                        hueUserName))]))
 
 ; Menu Bars
 
@@ -1035,9 +750,9 @@
                                   [min-width 300]))
 (define userNameMessage (new message% [parent userNameMessagePanel]
                              [label "Enter Device Name (ie: My Macbook). Press Link Button on Bridge. Click \"Set\"."]
-                             [vert-margin 20]
+                             [vert-margin 10]
                              [horiz-margin 20]
-                             [stretchable-height 200]))
+                             [auto-resize #t]))
 (define userNamePanel (new vertical-panel% [parent userNameDialog]
                            [alignment '(left center)]
                            [min-width 200]
@@ -1087,8 +802,7 @@
                                            (send userNameMessage set-label
                                                  (string-append 
                                                   bridgeError 
-                                                  ". Enter Device Name (ie: My Macbook).
- \\n Press Link Button on Bridge. Click \"Set\"."))))))]))
+                                                  ". Enter Device Name (ie: My Macbook). \n Press Link Button on Bridge. Click \"Set\"."))))))]))
 
 ; Bridge Update Dialog
 
