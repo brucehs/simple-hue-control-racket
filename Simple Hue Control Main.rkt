@@ -849,9 +849,9 @@
                                   [min-width 300]))
 (define userNameMessage (new message% [parent userNameMessagePanel]
                              [label "Enter Device Name (ie: My Macbook). Press Link Button on Bridge. Click \"Set\"."]
-                             [vert-margin 20]
+                             [vert-margin 10]
                              [horiz-margin 20]
-                             [stretchable-height 200]))
+                             [auto-resize #t]))
 (define userNamePanel (new vertical-panel% [parent userNameDialog]
                            [alignment '(left center)]
                            [min-width 200]
@@ -901,8 +901,7 @@
                                            (send userNameMessage set-label
                                                  (string-append 
                                                   bridgeError 
-                                                  ". Enter Device Name (ie: My Macbook).
- \\n Press Link Button on Bridge. Click \"Set\"."))))))]))
+                                                  ". Enter Device Name (ie: My Macbook). \n Press Link Button on Bridge. Click \"Set\"."))))))]))
 
 ; Bridge Update Dialog
 
