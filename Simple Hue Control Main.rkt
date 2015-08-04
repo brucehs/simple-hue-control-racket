@@ -386,7 +386,7 @@
                                          (let [(newCueName (send saveCueNameField get-value))]
                                            (send (new cue% [label newCueName]) set-parent mainList)
                                            (let [(newCuePosition (- (length (send mainList get-children)) 1))]
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus))
+                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus bridgeAddress hueUserName))
                                              (send (list-ref (send mainList get-children) newCuePosition) set-time (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
@@ -722,67 +722,6 @@
                         [label initialSatMessage]
                         [auto-resize #t]))
 
-; Procedures for Saving, Restoring, and Deleting Cues.
-
-(define retrieveBridgeStatus
-  (lambda ()
-    (let-values ([(httpStatus httpHeader jsonResponse)
-                  (http-sendrecv
-                   bridgeAddress (string-append (string-append "/api/" hueUserName) "/lights/")
-                   #:method 'GET
-                   #:headers
-                   '("Content-Type: application/json")
-                   #:content-decode '(json))])
-      (read-json jsonResponse))))
-
-(define getOneJsonState
-  (lambda (cueList cueNumber lightNumber)
-    (hash-ref 
-     (hash-ref 
-      (send 
-       (list-ref (send cueList get-children) cueNumber) 
-       get-json) 
-      (string->symbol (number->string lightNumber)))
-     'state)))
-
-; This procedure uses the last time set in the main control window.
-
-(define restoreCue
-  (lambda (cueList cueNumber numberOfLights)
-    (for ([i (in-range 1 numberOfLights)])
-      (let ([lightState (getOneJsonState cueList cueNumber i)])
-        (let-values ([(httpStatus httpHeader jsonResponse)
-                      (http-sendrecv
-                       bridgeAddress (string-append 
-                                      (string-append 
-                                       (string-append 
-                                        (string-append "/api/" hueUserName) 
-                                        "/lights/") 
-                                       (number->string i)) 
-                                      "/state")
-                       #:method 'PUT
-                       #:data
-                       (jsexpr->string
-                        (hash 'on (hash-ref lightState 'on)
-                              'bri (hash-ref lightState 'bri)
-                              'hue (hash-ref lightState 'hue)
-                              'sat (hash-ref lightState 'sat)
-                              'transitiontime (send (list-ref (send cueList get-children) cueNumber) get-time)))
-                       #:headers
-                       '("Content-Type: application/json")
-                       #:content-decode '(json))])
-;          (set! bridgeResponse (read-json jsonResponse))
-          (updateAllLights 1 16))))))
-
-; The cue% object remains. I am unsure how to mark it for Garbage Collection.
-
-(define deleteCue
-  (lambda (cueList position)
-    (let-values ([(cueList1 cueList2)
-                  (split-at (send cueList get-children) position)])
-      (send cueList set-children (append cueList1 (drop cueList2 1))))
-    (collect-garbage)))
-
 ; Create a Window for the Cue List.
 
 (define cueListWindow (new frame% [label "Main Cue List"]))
@@ -819,7 +758,9 @@
                                        (restoreCue 
                                         mainList 
                                         (send cueChoice get-selection) 
-                                        17))]))
+                                        17
+                                        bridgeAddress
+                                        hueUserName))]))
 
 ; Menu Bars
 
