@@ -46,7 +46,7 @@
     (hash 'bridgeAddress "0.0.0.0"
           'userDevice ""
           'hueUserName ""
-          'appname "simple_hue_control"
+          'appName "simple_hue_control"
           'deviceType "")
     bridgeSettingsFile)))
 
