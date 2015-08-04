@@ -5,6 +5,13 @@
          supportDirectoryExists?
          bridgeSettingsFileExists?)
 
+; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
+; file within the Application Support directory. Ideally, this will eventually
+; become a plist file within ~/Libarary/Preferences, but I am unable to get
+; xml/plist to work at the moment.
+
+; Long-term TUDU: Test supportDirectory on Linux and Windows.
+
 ; Define the location of the bridge settings file and the file itself.
 
 (define supportDirectory
