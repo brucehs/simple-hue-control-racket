@@ -3,7 +3,8 @@
 (require net/http-client
          net/uri-codec
          json
-         "shc-classes.rkt")
+         "shc-classes.rkt"
+         "shc-settings.rkt")
 
 (compile-allow-set!-undefined #t)
 
@@ -11,45 +12,9 @@
 ; Create Bridge Address and User Name files if they do not exist. Otherwise,
 ; open the files.
 
-; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
-; file within the Application Support directory. Ideally, this will eventually
-; become a plist file within ~/Libarary/Preferences, but I am unable to get
-; xml/plist to work at the moment.
+(supportDirectoryExists?)
 
-; Long-term TUDU: Test supportDirectory on Linux and Windows.
-
-(define supportDirectory
-  (let ([system (system-type 'os)])
-    (cond
-      ((equal? system 'macosx)
-       (string->path (string-append 
-                      (path->string (find-system-path 'home-dir)) 
-                      "Library/Application Support/Simple Hue Control/")))
-      ((equal? system 'unix)
-       (string->path (string-append
-                      (path->string (find-system-path 'doc-dir))
-                      "Simple Hue Control/Settings/")))
-      ((equal? system 'windows)
-       (string->path (string-append
-                      (path->string (find-system-path 'doc-dir))
-                      "Simple Hue Control\\Settings\\"))))))
-
-(define bridgeSettingsFile
-  (build-path supportDirectory (string->path "Bridge Settings.shc")))
-
-(cond
-  ((not (directory-exists? supportDirectory))
-   (make-directory supportDirectory)))
-
-(cond
-  ((not (file-exists? bridgeSettingsFile))
-   (write-to-file
-    (hash 'bridgeAddress "0.0.0.0"
-          'userDevice ""
-          'hueUserName ""
-          'appName "simple_hue_control"
-          'deviceType "")
-    bridgeSettingsFile)))
+(bridgeSettingsFileExists?)
 
 ; Bridge Communication Variables. Communication will not work until 
 ; these are set by the user.
