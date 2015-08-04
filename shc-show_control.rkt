@@ -30,7 +30,9 @@
   (lambda (panelContents)
     (cond
       ((null? panelContents) (quote ()))
-      (else (cons (send (car panelContents) get-value) (getLightsRow (cdr panelContents)))))))
+      (else (cons
+             (send (car panelContents) get-value)
+             (getLightsRow (cdr panelContents)))))))
 
 (define getLights 
   (lambda (firstRow secondRow)
@@ -40,7 +42,8 @@
   (lambda (listOfLights)
     (cond
       ((null? listOfLights) (quote ()))
-      ((eq? (car listOfLights) #t) (cons (length listOfLights) (huesToCue (cdr listOfLights))))
+      ((eq? (car listOfLights) #t)
+       (cons (length listOfLights) (huesToCue (cdr listOfLights))))
       (else (huesToCue (cdr listOfLights))))))
 
 (define getHuesToCue
@@ -130,28 +133,43 @@
              (cond
                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
                 (send 
-                 (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 0) 
+                 (list-ref (send
+                            (list-ref (send lightLineOne get-children) (- i 1))
+                            get-children)
+                           0) 
                  set-label 
                  (string-append initialOnMessage "T")))
                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
                 (send 
-                 (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 0) 
+                 (list-ref (send
+                            (list-ref (send lightLineOne get-children) (- i 1))
+                            get-children)
+                           0) 
                  set-label 
                  (string-append initialOnMessage "F"))))
              (send 
-              (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 1) 
+              (list-ref (send
+                         (list-ref (send lightLineOne get-children) (- i 1))
+                         get-children)
+                        1) 
               set-label 
               (string-append initialBriMessage 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'bri))))
              (send 
-              (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 2) 
+              (list-ref (send
+                         (list-ref (send lightLineOne get-children) (- i 1))
+                         get-children)
+                        2) 
               set-label 
               (string-append initialHueMessage 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'hue))))
              (send 
-              (list-ref (send (list-ref (send lightLineOne get-children) (- i 1)) get-children) 3) 
+              (list-ref (send
+                         (list-ref (send lightLineOne get-children) (- i 1))
+                         get-children)
+                        3) 
               set-label 
               (string-append initialSatMessage 
                              (number->string 
@@ -160,32 +178,49 @@
              (cond
                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #t)
                 (send 
-                 (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 0) 
+                 (list-ref (send
+                            (list-ref (send lightLineTwo get-children) (- i 9))
+                            get-children)
+                           0) 
                  set-label 
                  (string-append initialOnMessage "T")))
                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
                 (send 
-                 (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 0) 
+                 (list-ref (send
+                            (list-ref (send lightLineTwo get-children) (- i 9))
+                            get-children)
+                           0) 
                  set-label 
                  (string-append initialOnMessage "F"))))
              (send 
-              (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 1) 
+              (list-ref (send
+                         (list-ref (send lightLineTwo get-children) (- i 9))
+                         get-children)
+                        1) 
               set-label 
               (string-append initialBriMessage 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'bri))))
              (send 
-              (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 2) 
+              (list-ref (send
+                         (list-ref (send lightLineTwo get-children) (- i 9))
+                         get-children)
+                        2) 
               set-label 
               (string-append initialHueMessage 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'hue))))
              (send 
-              (list-ref (send (list-ref (send lightLineTwo get-children) (- i 9)) get-children) 3) 
+              (list-ref (send
+                         (list-ref (send lightLineTwo get-children) (- i 9))
+                         get-children)
+                        3) 
               set-label 
               (string-append initialSatMessage 
                              (number->string 
-                              (hash-ref (hash-ref lightState 'state) 'sat)))))))))))
+                              (hash-ref
+                               (hash-ref lightState 'state)
+                               'sat)))))))))))
 
 ; Procedures for Saving, Restoring, and Deleting Cues.
 
