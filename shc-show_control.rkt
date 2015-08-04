@@ -101,7 +101,8 @@
                        '("Content-Type: application/json")
                        #:content-decode '(json))])
           (let ([response bridgeResponse2])
-            (set! bridgeResponse2 (cons (read-json jsonResponse) response)))))
+            (set! bridgeResponse2
+                  (cons (read-json jsonResponse) response)))))
       (set! bridgeResponse bridgeResponse2)
       (reverse bridgeResponse2))))
 
@@ -261,33 +262,38 @@
 
 (define restoreCue
   (lambda (cueList cueNumber numberOfLights address userName)
-    (for ([i (in-range 1 numberOfLights)])
-      (let ([lightState (getOneJsonState cueList cueNumber i)])
-        (let-values ([(httpStatus httpHeader jsonResponse)
-                      (http-sendrecv
-                       address (string-append 
-                                (string-append 
-                                 (string-append 
-                                  (string-append "/api/" userName) 
-                                  "/lights/") 
-                                 (number->string i)) 
-                                "/state")
-                       #:method 'PUT
-                       #:data
-                       (jsexpr->string
-                        (hash 'on (hash-ref lightState 'on)
-                              'bri (hash-ref lightState 'bri)
-                              'hue (hash-ref lightState 'hue)
-                              'sat (hash-ref lightState 'sat)
-                              'transitiontime (send
-                                               (list-ref
-                                                (send cueList get-children)
-                                                cueNumber)
-                                               get-time)))
-                       #:headers
-                       '("Content-Type: application/json")
-                       #:content-decode '(json))])
-          (set! bridgeResponse (read-json jsonResponse)))))))
+    (let ([bridgeResponse2 '()])
+      (for ([i (in-range 1 numberOfLights)])
+        (let ([lightState (getOneJsonState cueList cueNumber i)])
+          (let-values ([(httpStatus httpHeader jsonResponse)
+                        (http-sendrecv
+                         address (string-append 
+                                  (string-append 
+                                   (string-append 
+                                    (string-append "/api/" userName) 
+                                    "/lights/") 
+                                   (number->string i)) 
+                                  "/state")
+                         #:method 'PUT
+                         #:data
+                         (jsexpr->string
+                          (hash 'on (hash-ref lightState 'on)
+                                'bri (hash-ref lightState 'bri)
+                                'hue (hash-ref lightState 'hue)
+                                'sat (hash-ref lightState 'sat)
+                                'transitiontime (send
+                                                 (list-ref
+                                                  (send cueList get-children)
+                                                  cueNumber)
+                                                 get-time)))
+                         #:headers
+                         '("Content-Type: application/json")
+                         #:content-decode '(json))])
+            (let ([response bridgeResponse2])
+              (set! bridgeResponse2
+                    (cons (read-json jsonResponse) response))))))
+      (set! bridgeResponse bridgeResponse2)
+      (reverse bridgeResponse2))))
 
 ; I believe the cue% object remains. I am unsure how to mark it
 ; for Garbage Collection.
