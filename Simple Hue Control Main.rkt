@@ -28,14 +28,6 @@
 (define deviceType (hash-ref (file->value bridgeSettingsFile) 'deviceType))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'appName))
 
-; Cue List and Cue Classes
-; Perhaps Scenes could be used for Cueing instead. They can have the
-; transitiontime value attached. However, the state of the scene is not
-; available via an API call. It may be better to ask the user to specify
-; a time upon saving a cue.
-
-
-
 ; Hack for Workshop: Create a main Cue List.
 
 (define mainList (new cueList% [label "Main List"]))
