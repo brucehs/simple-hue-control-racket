@@ -771,7 +771,7 @@
                        #:headers
                        '("Content-Type: application/json")
                        #:content-decode '(json))])
-          (set! bridgeResponse (read-json jsonResponse))
+;          (set! bridgeResponse (read-json jsonResponse))
           (updateAllLights 1 16))))))
 
 ; The cue% object remains. I am unsure how to mark it for Garbage Collection.
