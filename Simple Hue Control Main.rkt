@@ -15,10 +15,23 @@
 ; become a plist file within ~/Libarary/Preferences, but I am unable to get
 ; xml/plist to work at the moment.
 
-(define supportDirectory 
-  (string->path (string-append 
-                 (path->string (find-system-path 'home-dir)) 
-                 "Library/Application Support/Simple Hue Control/")))
+; Long-term TUDU: Test supportDirectory on Linux and Windows.
+
+(define supportDirectory
+  (let ([system (system-type 'os)])
+    (cond
+      ((equal? system 'macosx)
+       (string->path (string-append 
+                      (path->string (find-system-path 'home-dir)) 
+                      "Library/Application Support/Simple Hue Control/")))
+      ((equal? system 'unix)
+       (string->path (string-append
+                      (path->string (find-system-path 'doc-dir))
+                      "Simple Hue Control/Settings/")))
+      ((equal? system 'windows)
+       (string->path (string-append
+                      (path->string (find-system-path 'doc-dir))
+                      "Simple Hue Control\\Settings\\"))))))
 
 (define bridgeSettingsFile
   (build-path supportDirectory (string->path "Bridge Settings.shc")))
