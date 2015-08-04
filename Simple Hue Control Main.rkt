@@ -272,6 +272,12 @@
                                 [alignment '(right center)]
                                 [min-width 200]))
 
+(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
+                                 [label "Cancel"]
+                                 [callback (lambda (button event)
+                                             (send saveCueNameField set-value "")
+                                             (send saveCueDialog show #f))]))
+
 (define saveCueOKButton (new button% [parent saveCueButtonPanel]
                              [label "Save"]
                              [callback (lambda(button event)
@@ -284,11 +290,6 @@
                                            (send saveCueNameField set-value "")
                                            (send saveCueDialog show #f)))]))
 
-(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send saveCueNameField set-value "")
-                                             (send saveCueDialog show #f))]))
 ; Create Go Button
 
 (define cueGoPanel (new horizontal-panel% [parent cueGoAndSavePanel]
