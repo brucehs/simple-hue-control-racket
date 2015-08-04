@@ -70,6 +70,9 @@
 ; local binding without using set!. It does not return from the function
 ; if called within the for loop.
 
+; TUDU, create a special circumstance when sending a command to all the lights
+; that uses group 0.
+
 (define goLights
   (lambda (lights state time address userName)
     (let ([bridgeResponse2 '()])

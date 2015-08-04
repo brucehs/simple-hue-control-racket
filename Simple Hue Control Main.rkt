@@ -35,10 +35,9 @@
 
 ; Creating the procedures we will need.
 
-; First is getting the lights we need to cue.
+; Initialize variables for lights to send commands to and the lighting
+; state to send.
 (define lightsToCue '(#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
-
-; Next is getting the lighting state for the cue.
 (define lightingState '(#f 1 0 0))
 
 ; We need to update the Status Window with the lights just used.
