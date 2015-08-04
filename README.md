@@ -19,7 +19,7 @@ I am only providing the source code and not a compiled binary as there are still
 
 * For theatrical purposes, a dedicated router—not connected to the internet—is recommended.  
 
-* I've only run the program on Mac OS X 10.9 and 10.10 and Racket v 6.0. I have no clue how it will function on other platforms. As it stores configuration files in ~/Library/Application Support/Simple Hue Control/, there will probably be problems. Adding support for Windows and Linux is a low priority, so I suggest forking if such functionality is important to you.  
+* I've only run the program on Mac OS X 10.9 and 10.10 and Racket v 6.0. I have no clue how it will function on other platforms. I've now added checks for OS type when creating the Settings folder; however, I have not yet tested it on Windows or Linux. Again, adding support for Windows and Linux is a low priority, so I suggest forking if such functionality is important to you.  
 
 ## How To  
 
