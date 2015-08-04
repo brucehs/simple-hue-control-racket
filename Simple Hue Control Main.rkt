@@ -38,33 +38,6 @@
 ; First is getting the lights we need to cue.
 (define lightsToCue '(#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
 
-(define getLightsRow 
-  (lambda (panelContents)
-    (cond
-      ((null? panelContents) (quote ()))
-      (else (cons (send (car panelContents) get-value) (getLightsRow (cdr panelContents)))))))
-
-(define getLights 
-  (lambda (firstRow secondRow)
-    (append (getLightsRow firstRow) (getLightsRow secondRow))))
-
-(define huesToCue
-  (lambda (lightList)
-    (cond
-      ((null? lightList) (quote ()))
-      ((eq? (car lightList) #t) (cons (length lightList) (huesToCue (cdr lightList))))
-      (else (huesToCue (cdr lightList))))))
-
-(define getHuesToCue
-  (lambda (proc lst)
-    (map (lambda (number)
-           (- 17 number))
-         (proc lst))))
-
-(define lightList
-  (lambda ()
-    (getHuesToCue huesToCue lightsToCue)))
-
 ; Next is getting the lighting state for the cue.
 (define lightingState '(#f 1 0 0))
 
@@ -326,8 +299,8 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goLights (lightList) lightingState cueTime bridgeAddress hueUserName)
-                                     (updateLastStatus (lightList) lightingState cueTime)
+                                     (goLights (lightList lightsToCue) lightingState cueTime bridgeAddress hueUserName)
+                                     (updateLastStatus (lightList lightsToCue) lightingState cueTime)
                                      (updateAllLights
                                       1
                                       16

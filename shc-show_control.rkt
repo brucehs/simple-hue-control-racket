@@ -5,7 +5,9 @@
          json)
 
 ; Provide Main Light Adjustments.
-(provide bridgeResponse
+(provide getLights
+         lightList
+         bridgeResponse
          onOrOff?
          goLights)
 
@@ -21,8 +23,35 @@
          restoreCue
          deleteCue)
 
-(define bridgeResponse
-  (list ))
+; Procedures for translating selection in the "Select Lights to Cue" panel
+; to data to be sent to the bridge.
+
+(define getLightsRow 
+  (lambda (panelContents)
+    (cond
+      ((null? panelContents) (quote ()))
+      (else (cons (send (car panelContents) get-value) (getLightsRow (cdr panelContents)))))))
+
+(define getLights 
+  (lambda (firstRow secondRow)
+    (append (getLightsRow firstRow) (getLightsRow secondRow))))
+
+(define huesToCue
+  (lambda (listOfLights)
+    (cond
+      ((null? listOfLights) (quote ()))
+      ((eq? (car listOfLights) #t) (cons (length listOfLights) (huesToCue (cdr listOfLights))))
+      (else (huesToCue (cdr listOfLights))))))
+
+(define getHuesToCue
+  (lambda (proc lst)
+    (map (lambda (number)
+           (- 17 number))
+         (proc lst))))
+
+(define lightList
+  (lambda (whichLights)
+    (getHuesToCue huesToCue whichLights)))
 
 ; Translates lightingState on/off value from 0 or 1 to #t or #f.
 
@@ -188,6 +217,9 @@
 ; Procedure for restoreing a saved cue.
 
 ; TUDU. Make procedure return values for all the lights in the cue.
+
+(define bridgeResponse
+  (list ))
 
 (define restoreCue
   (lambda (cueList cueNumber numberOfLights address userName)
