@@ -38,7 +38,19 @@
 ; Initialize variables for lights to send commands to and the lighting
 ; state to send.
 (define lightsToCue '(#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
-(define lightingState '(#f 1 0 0))
+;(define lightingState '(#f 1 0 0))
+(define lightingState
+  (make-hash
+   (hash->list
+    (hash
+     'on #f
+     'onChange #f
+     'bri 1
+     'briChange #f
+     'hue 0
+     'hueChange #f
+     'sat 0
+     'satChange #f))))
 
 ; We need to update the Status Window with the lights just used.
 ; This is for the "Lighting Status" Window. Data does not come from
@@ -63,24 +75,24 @@
 (define updateOn
   (lambda (state)
     (cond
-      ((equal? (list-ref state 0) #t) (set! lastOnMessage "On?: TRUE"))
-      ((equal? (list-ref state 0) #f) (set! lastOnMessage "On?: FALSE"))
+      ((equal? (hash-ref state 'on) #t) (set! lastOnMessage "On?: TRUE"))
+      ((equal? (hash-ref state 'on) #f) (set! lastOnMessage "On?: FALSE"))
       (else (set! lastOnMessage "On? ")))
     (send lastOnDisplay set-label lastOnMessage)))
 
 (define updateBri
   (lambda (state)
-    (set! lastBriMessage (string-append "Intensity: " (number->string (list-ref state 1))))
+    (set! lastBriMessage (string-append "Intensity: " (number->string (hash-ref state 'bri))))
     (send lastBriDisplay set-label lastBriMessage)))
 
 (define updateHue
   (lambda (state)
-    (set! lastHueMessage (string-append "Hue: " (number->string (list-ref state 2))))
+    (set! lastHueMessage (string-append "Hue: " (number->string (hash-ref state 'hue))))
     (send lastHueDisplay set-label lastHueMessage)))
 
 (define updateSat
   (lambda (state)
-    (set! lastSatMessage (string-append "Saturation: " (number->string (list-ref state 3))))
+    (set! lastSatMessage (string-append "Saturation: " (number->string (hash-ref state 'sat))))
     (send lastSatDisplay set-label lastSatMessage)))
 
 (define updateLastTransitiontime
@@ -214,11 +226,10 @@
 (define lightsAttributesButton (new button% [parent lightsAttributesButtonPanel]
                                     [label "Lighting State!"]
                                     [callback (lambda (button event)
-                                                (set! lightingState (list 
-                                                                     (onOrOff? (send lightsChange get-selection)) 
-                                                                     (send lightsIntensity get-value) 
-                                                                     (send lightsColor get-value) 
-                                                                     (send lightsSaturation get-value))))]))
+                                                (onChange? lightsChange lightingState)
+                                                (briChange? lightsIntensity lightingState) 
+                                                (hueChange? lightsColor lightingState) 
+                                                (satChange? lightsSaturation lightingState))]))
 
 ; Now we set the cue time.
 
