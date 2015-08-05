@@ -7,6 +7,10 @@
 ; Provide Main Light Adjustments.
 (provide getLights
          lightList
+         onChange?
+         briChange?
+         hueChange?
+         satChange?
          bridgeResponse
          onOrOff?
          goLights)
@@ -64,6 +68,90 @@
       ((equal? state 0) #t)
       (else #f))))
 
+; Procedures to determine whether lighting variables have changed.
+; There is an issue in which pressing the "Lighting State" button
+; twice will set the change states to #f.
+
+; TUDU: Create more sophisticated procedures that query the bridge
+; directly. May need to create a light% class and a state field
+; and instantiate an object for each light. This will allow
+; patching as well.
+
+(define onChange?
+    (lambda (radio-box state)
+      (cond
+        ((equal?
+          (onOrOff? (send radio-box get-selection))
+          (hash-ref state 'on))
+         (hash-set! state 'onChange #f))
+        (else
+         (hash-set! state 'on (onOrOff? (send radio-box get-selection)))
+         (hash-set! state 'onChange #t)))))
+
+(define briChange?
+  (lambda (slider state)
+    (cond
+    ((equal? (send slider get-value) (hash-ref state 'bri))
+     (hash-set! state 'briChange #f))
+    (else
+     (hash-set! state 'bri (send slider get-value))
+     (hash-set! state 'briChange #t)))))
+
+(define hueChange?
+  (lambda (slider state)
+    (cond
+    ((equal? (send slider get-value) (hash-ref state 'hue))
+     (hash-set! state 'hueChange #f))
+    (else
+     (hash-set! state 'hue (send slider get-value))
+     (hash-set! state 'hueChange #t)))))
+
+(define satChange?
+  (lambda (slider state)
+    (cond
+    ((equal? (send slider get-value) (hash-ref state 'sat))
+     (hash-set! state 'satChange #f))
+    (else
+     (hash-set! state 'sat (send slider get-value))
+     (hash-set! state 'satChange #t)))))
+
+; Procedures for creating a json command with just the variables
+; that have changed.
+
+(define hashForJson
+    (lambda (state time)
+      (make-hash
+       (list
+        (cond
+          ((equal? (hash-ref state 'onChange) #t)
+           (cons 'on (hash-ref state 'on)))
+          (else
+           '(() ())))
+        (cond
+          ((equal? (hash-ref state 'briChange) #t)
+           (cons 'bri (hash-ref state 'bri)))
+          (else
+           '(() ())))
+        (cond
+          ((equal? (hash-ref state 'hueChange) #t)
+           (cons 'hue (hash-ref state 'hue)))
+          (else
+           '(() ())))
+        (cond
+          ((equal? (hash-ref state 'satChange) #t)
+           (cons 'sat (hash-ref state 'sat)))
+          (else
+           '(() ())))
+        (cons 'transitiontime time)))))
+
+(define makeJsonCommand
+    (lambda (state time)
+      (let ([hashCommand (hashForJson state time)])
+        (cond
+          ((hash-has-key? hashCommand '())
+           (hash-remove! hashCommand '())))
+        (jsexpr->string hashCommand))))
+
 ; Procedure for sending a a lighting state to the Bridge.
 ; Now requires a Bridge IP address and Bridge User Name variables,
 ; so can be used with multiple bridges in necessary.
@@ -91,12 +179,7 @@
                                 "/state")
                        #:method 'PUT
                        #:data
-                       (jsexpr->string
-                        (hash 'on (list-ref state 0)
-                              'bri (list-ref state 1)
-                              'hue (list-ref state 2)
-                              'sat (list-ref state 3)
-                              'transitiontime time))
+                       (makeJsonCommand state time)
                        #:headers
                        '("Content-Type: application/json")
                        #:content-decode '(json))])
@@ -255,7 +338,8 @@
 
 ; Procedure for restoreing a saved cue.
 
-; TUDU. Make procedure return values for all the lights in the cue.
+; TUDU. Compare json state of each light to the saved json state. Then compile
+; json commands with just the changed values.
 
 (define bridgeResponse
   (list ))
