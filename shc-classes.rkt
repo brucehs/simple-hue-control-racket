@@ -54,17 +54,16 @@
       (set-field! label this newLabel))
     (define/public (set-json newJson)
       (set-field! jsonResponse this newJson))
-    (define/public (set-parent parentCueList)
-      (set-field! children parentCueList 
-                  (append (get-field children parentCueList) (list this)))
-      (set-field! parent this parentCueList))
     (define/public (set-time newTime)
       (cond
         ((equal? (string->number newTime) #f)
          (set-field! time this 0))
         (else
          (set-field! time this
-                     (inexact->exact (* (string->number newTime) 10))))))))
+                     (inexact->exact (* (string->number newTime) 10))))))
+    (begin (set-field! children parent
+                                    (append (get-field children parent)
+                                            (list this))))))
 
 ; A Lights Class to allow for grouping and level comparison for restoring cues.
 ; Also a Patch Class to act as a parent for all lights
@@ -81,11 +80,14 @@
     (define/public (set-children listOfChildren)
       (set-field! children this listOfChildren))))
 
+; Patch Object for Testing
+(define mainPatch (new patch% [label "Main Patch"]))
+
 (define light%
   (class object%
     (super-new)
     (init-field [label ""])
-    (init-field [parent '(object:patch%)])
+    (init-field [parent '()])
     (init-field [group 0])
     (init-field [state (hash
                         'on #f
@@ -98,10 +100,6 @@
     (define/public (get-state) state)
     (define/public (set-label newLabel)
       (set-field! label this newLabel))
-    (define/public (set-parent parentPatch)
-      (set-field! children parentPatch
-                  (append (get-field children parentPatch) (list this)))
-      (set-field! parent this parentPatch))
     (define/public (set-group newGroup)
       (cond
         ((isGroup? newGroup)
@@ -109,7 +107,10 @@
     (define/public (set-state newState)
       (cond
         ((hash? newState)
-         (set-field! state this newState))))))
+         (set-field! state this newState))))
+    (begin (set-field! children parent
+                                    (append (get-field children parent)
+                                            (list this))))))
 
 ; Procedure for determining if an assigned group number is valid.
 

@@ -295,7 +295,8 @@
                              [label "Save"]
                              [callback (lambda(button event)
                                          (let [(newCueName (send saveCueNameField get-value))]
-                                           (send (new cue% [label newCueName]) set-parent mainList)
+                                           (new cue% [label newCueName]
+                                                [parent mainList])
                                            (let [(newCuePosition (- (length (send mainList get-children)) 1))]
                                              (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus bridgeAddress hueUserName))
                                              (send (list-ref (send mainList get-children) newCuePosition) set-time (send saveCueTimeField get-value)))
