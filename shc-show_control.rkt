@@ -388,3 +388,42 @@
                   (split-at (send cueList get-children) position)])
       (send cueList set-children (append cueList1 (drop cueList2 1))))
     (collect-garbage)))
+
+; Procedures for comparing cues to current light state
+
+(define getLightState
+    (lambda (lightNumber address userName)
+      (hash-ref
+       (hash-ref
+        (retrieveBridgeStatus address userName)
+        (string->symbol (number->string lightNumber)))
+       'state)))
+
+(define compareLightState
+    (lambda (hueObject lightNumber address userName)
+      (make-hash
+       (list
+        (cond
+          ((equal? (hash-ref (send hueObject get-state) 'on)
+                   (hash-ref (getLightState lightNumber address userName) 'on))
+           (cons 'onChange #f))
+          (else
+           (cons 'onChange #t)))
+        (cond
+          ((equal? (hash-ref (send hueObject get-state) 'bri)
+                   (hash-ref (getLightState lightNumber address userName) 'bri))
+           (cons 'briChange #f))
+          (else
+           (cons 'briChange #t)))
+        (cond
+          ((equal? (hash-ref (send hueObject get-state) 'hue)
+                   (hash-ref (getLightState lightNumber address userName) 'hue))
+           (cons 'hueChange #f))
+          (else
+           (cons 'hueChange #t)))
+        (cond
+          ((equal? (hash-ref (send hueObject get-state) 'sat)
+                   (hash-ref (getLightState lightNumber address userName) 'sat))
+           (cons 'satChange #f))
+          (else
+           (cons 'satChange #t)))))))
