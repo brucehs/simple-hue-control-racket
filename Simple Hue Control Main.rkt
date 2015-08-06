@@ -33,7 +33,9 @@
 
 (define mainList (new cueList% [label "Main List"]))
 
-; Creating the procedures we will need.
+; Create a patch object.
+
+(define mainPatch (new patch% [label "Main Patch"]))
 
 ; Initialize variables for lights to send commands to and the lighting
 ; state to send.
