@@ -1,12 +1,15 @@
 #lang racket
 
+(provide cueList%
+         cue%
+         patch%
+         light%)
+
 ; Cue List and Cue Classes
 ; Perhaps Scenes could be used for Cueing instead. They can have the
 ; transitiontime value attached. However, the state of the scene is not
 ; available via an API call. It may be better to ask the user to specify
 ; a time upon saving a cue.
-
-(provide cueList% cue%)
 
 (define cueList%
   (class object%
@@ -15,6 +18,8 @@
     (init-field [children '()])
     (define/public (get-label) label)
     (define/public (get-children) children)
+    (define/public (set-label newLabel)
+      (set-field! label this newLabel))
     (define/public (set-children listOfChildren)
       (set-field! children this listOfChildren))))
 
@@ -60,3 +65,61 @@
         (else
          (set-field! time this
                      (inexact->exact (* (string->number newTime) 10))))))))
+
+; A Lights Class to allow for grouping and level comparison for restoring cues.
+; Also a Patch Class to act as a parent for all lights
+
+(define patch%
+  (class object%
+    (super-new)
+    (init-field [label ""])
+    (init-field [children '()])
+    (define/public (get-label) label)
+    (define/public (get-children) children)
+    (define/public (set-label newLabel)
+      (set-field! label this newLabel))
+    (define/public (set-children listOfChildren)
+      (set-field! children this listOfChildren))))
+
+(define light%
+  (class object%
+    (super-new)
+    (init-field [label ""])
+    (init-field [parent '(object:patch%)])
+    (init-field [group 0])
+    (init-field [state (hash
+                        'on #f
+                        'bri 1
+                        'hue 0
+                        'sat 0)])
+    (define/public (get-label) label)
+    (define/public (get-parent) parent)
+    (define/public (get-group) group)
+    (define/public (get-state) state)
+    (define/public (set-label newLabel)
+      (set-field! label this newLabel))
+    (define/public (set-parent parentPatch)
+      (set-field! children parentPatch
+                  (append (get-field children parentPatch) (list this)))
+      (set-field! parent this parentPatch))
+    (define/public (set-group newGroup)
+      (cond
+        ((isGroup? newGroup)
+         (set-field! group this newGroup))))
+    (define/public (set-state newState)
+      (cond
+        ((hash? newState)
+         (set-field! state this newState))))))
+
+; Procedure for determining if an assigned group number is valid.
+
+(define isGroup?
+    (lambda (group)
+      (cond
+        ((and
+          (and
+           (exact-nonnegative-integer? group)
+           (>= group 0))
+          (<= group 16))
+         #t)
+        (else #f))))
