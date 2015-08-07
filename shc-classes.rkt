@@ -88,6 +88,7 @@
     (super-new)
     (init-field [label ""])
     (init-field [parent '()])
+    (init-field [bulb 1])
     (init-field [group 0])
     (init-field [state (hash
                         'on #f
@@ -96,10 +97,13 @@
                         'sat 0)])
     (define/public (get-label) label)
     (define/public (get-parent) parent)
+    (define/public (get-bulb) bulb)
     (define/public (get-group) group)
     (define/public (get-state) state)
     (define/public (set-label newLabel)
       (set-field! label this newLabel))
+    (define/public (set-bulb new-bulb)
+      (set-field! bulb this new-bulb))
     (define/public (set-group newGroup)
       (cond
         ((isGroup? newGroup)
