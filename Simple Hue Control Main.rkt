@@ -29,13 +29,23 @@
 (define deviceType (hash-ref (file->value bridgeSettingsFile) 'deviceType))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'appName))
 
-; Hack for Workshop: Create a main Cue List.
+; Create a main Cue List. Temporary. Eventually there will be an option for
+;; multiple cue lists.
 
 (define mainList (new cueList% [label "Main List"]))
 
-; Create a patch object.
+;; Create a patch object.
 
 (define mainPatch (new patch% [label "Main Patch"]))
+
+;; Create lights.
+
+(for ([i (in-range 1 17)])
+  (new light%
+       [label (string-append "Hue-" (number->string i))]
+       [parent mainPatch]
+       [bulb i]
+       [group 0]))
 
 ; Initialize variables for lights to send commands to and the lighting
 ; state to send.
