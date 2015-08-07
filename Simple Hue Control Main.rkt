@@ -238,6 +238,17 @@
 (define lightsAttributesButton (new button% [parent lightsAttributesButtonPanel]
                                     [label "Lighting State!"]
                                     [callback (lambda (button event)
+                                                (let ([light-objects (lightList lightsToCue)])
+                                                  (for ([i (in-range (length light-objects))])
+                                                    (send (list-ref
+                                                           (send mainPatch get-children)
+                                                           (- (list-ref light-objects i) 1))
+                                                          set-state (make-hash
+                                                                     (append
+                                                                      (on-pair lightsChange)
+                                                                      (bri-pair lightsIntensity)
+                                                                      (hue-pair lightsColor)
+                                                                      (sat-pair lightsSaturation))))))
                                                 (onChange? lightsChange lightingState)
                                                 (briChange? lightsIntensity lightingState) 
                                                 (hueChange? lightsColor lightingState) 
@@ -323,7 +334,7 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goLights (lightList lightsToCue) lightingState cueTime bridgeAddress hueUserName)
+                                     (goLights (bulbs-to-change mainPatch (lightList lightsToCue)) lightingState cueTime bridgeAddress hueUserName)
                                      (updateLastStatus (lightList lightsToCue) lightingState cueTime)
                                      (updateAllLights
                                       1
