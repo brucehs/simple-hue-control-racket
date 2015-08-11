@@ -183,22 +183,25 @@
          (hash-remove! hashCommand '())))
       (jsexpr->string hashCommand))))
 
-; Procedure for sending a a lighting state to the Bridge.
-; Now requires a Bridge IP address and Bridge User Name variables,
-; so can be used with multiple bridges in necessary.
-; Returns a list with the bridge's response for each light.
-; Not in the ideal fashion (it uses set!), but it works for the moment.
-; I'm unsure of how to get the data from jsonResponse out of its
-; local binding without using set!. It does not return from the function
-; if called within the for loop.
+;; Procedure for sending a a lighting state to the Bridge.
+;; Now requires a Bridge IP address and Bridge User Name variables,
+;; so can be used with multiple bridges in necessary.
+;; Returns a list with the bridge's response for each light.
+;; Not in the ideal fashion (it uses set!), but it works for the moment.
+;; I'm unsure of how to get the data from jsonResponse out of its
+;; local binding without using set!. It does not return from the function
+;; if called within the for loop.
 
-; TUDU, create a special circumstance when sending a command to all the lights
-; that uses group 0.
+;; TUDU, create a special circumstance when sending a command to all the lights
+;; that uses group 0.
+
+;; TUDU adjust delay to match number of hue commands sent.
 
 (define goLights
   (lambda (lights patch time address userName)
     (let ([bridgeResponse2 '()])
       (for ([i (in-range (length lights))])
+        (when (> i 1) (sleep .1))
         (let ([state
                (create-hash-for-bridge
                 (list-ref
