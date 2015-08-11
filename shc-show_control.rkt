@@ -172,6 +172,9 @@
          '(() ())))
       (cons 'transitiontime time)))))
 
+;; TUDU, create a special circumastance if the only json command is
+;; is "transitiontime" and abort the send.
+
 (define makeJsonCommand
   (lambda (state time)
     (let ([hashCommand (hashForJson state time)])
@@ -193,9 +196,20 @@
 ; that uses group 0.
 
 (define goLights
-  (lambda (lights state time address userName)
+  (lambda (lights patch time address userName)
     (let ([bridgeResponse2 '()])
       (for ([i (in-range (length lights))])
+        (let ([state
+               (create-hash-for-bridge
+                (list-ref
+                 (send patch get-children)
+                 (- (list-ref lights i) 1))
+                (send (list-ref
+                       (send patch get-children)
+                       (- (list-ref lights i) 1))
+                      get-bulb)
+                address
+                userName)])
         (let-values ([(httpStatus httpHeader jsonResponse)
                       (http-sendrecv
                        address (string-append 
@@ -203,7 +217,11 @@
                                  (string-append 
                                   (string-append "/api/" userName) 
                                   "/lights/") 
-                                 (number->string (list-ref lights i))) 
+                                 (number->string
+                                  (send (list-ref
+                                         (send patch get-children)
+                                         (- (list-ref lights i) 1))
+                                         get-bulb))) 
                                 "/state")
                        #:method 'PUT
                        #:data
@@ -213,7 +231,7 @@
                        #:content-decode '(json))])
           (let ([response bridgeResponse2])
             (set! bridgeResponse2
-                  (cons (read-json jsonResponse) response)))))
+                  (cons (read-json jsonResponse) response))))))
       (set! bridgeResponse bridgeResponse2)
       (reverse bridgeResponse2))))
 

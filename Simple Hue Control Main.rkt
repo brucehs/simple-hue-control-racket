@@ -26,7 +26,7 @@
 (define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridge-address))
 (define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'user-device))
 (define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hue-user-name))
-(define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-yype))
+(define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
 
 ; Create a main Cue List. Temporary. Eventually there will be an option for
@@ -334,7 +334,7 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goLights (bulbs-to-change mainPatch (lightList lightsToCue)) lightingState cueTime bridgeAddress hueUserName)
+                                     (goLights (lightList lightsToCue) mainPatch cueTime bridgeAddress hueUserName)
                                      (updateLastStatus (lightList lightsToCue) lightingState cueTime)
                                      (updateAllLights
                                       1
