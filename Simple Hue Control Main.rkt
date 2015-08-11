@@ -248,11 +248,7 @@
                                                                       (on-pair lightsChange)
                                                                       (bri-pair lightsIntensity)
                                                                       (hue-pair lightsColor)
-                                                                      (sat-pair lightsSaturation))))))
-                                                (onChange? lightsChange lightingState)
-                                                (briChange? lightsIntensity lightingState) 
-                                                (hueChange? lightsColor lightingState) 
-                                                (satChange? lightsSaturation lightingState))]))
+                                                                      (sat-pair lightsSaturation)))))))]))
 
 ; Now we set the cue time.
 
@@ -337,8 +333,7 @@
                                      (goLights (lightList lightsToCue) mainPatch cueTime bridgeAddress hueUserName)
                                      (updateLastStatus (lightList lightsToCue) lightingState cueTime)
                                      (updateAllLights
-                                      1
-                                      16
+                                      1 16
                                       lights1To8
                                       lights9To16
                                       bridgeAddress
