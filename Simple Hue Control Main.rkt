@@ -23,11 +23,11 @@
 ; Need to set up error handling if the user tries to use the application
 ; before setting these.
 
-(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridgeAddress))
-(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'userDevice))
-(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hueUserName))
-(define deviceType (hash-ref (file->value bridgeSettingsFile) 'deviceType))
-(define appName (hash-ref (file->value bridgeSettingsFile) 'appName))
+(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridge-address))
+(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'user-device))
+(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hue-user-name))
+(define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-yype))
+(define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
 
 ; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
