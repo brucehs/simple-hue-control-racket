@@ -268,51 +268,67 @@
 ;; local binding without using set!. It does not return from the function
 ;; if called within the for loop.
 
-;; TUDU, create a special circumstance when sending a command to all the lights
-;; that uses group 0.
-
-;; TUDU adjust delay to match number of hue commands sent.
-
 (define goLights
   (lambda (lights patch time address userName)
     (let ([bridgeResponse2 '()])
-      (for ([i (in-range (length lights))])
-        (when (> i 1) (sleep .01))
-        (let ([state
-               (create-hash-for-bridge
-                (list-ref
-                 (send patch get-children)
-                 (- (list-ref lights i) 1))
-                (send (list-ref
-                       (send patch get-children)
-                       (- (list-ref lights i) 1))
-                      get-bulb)
-                address
-                userName)])
-          (let-values ([(httpStatus httpHeader jsonResponse)
-                        (http-sendrecv
-                         address (string-append 
-                                  (string-append 
-                                   (string-append 
+      (cond
+        ((and (equal? (length lights) 16)
+              (<= time 10))
+         (let ([state
+                (make-hash
+                 (cons
+                  (cons 'transitiontime time)
+                  (hash->list (send (list-ref (send patch get-children) 0) get-state))))])
+           (let-values ([(httpStatus httpHeader jsonResponse)
+                         (http-sendrecv
+                          address  (string-append 
                                     (string-append "/api/" userName) 
-                                    "/lights/") 
-                                   (number->string
-                                    (send (list-ref
-                                           (send patch get-children)
-                                           (- (list-ref lights i) 1))
-                                          get-bulb))) 
-                                  "/state")
-                         #:method 'PUT
-                         #:data
-                         (makeJsonCommand state time)
-                         #:headers
-                         '("Content-Type: application/json")
-                         #:content-decode '(json))])
-            (let ([response bridgeResponse2])
-              (set! bridgeResponse2
-                    (cons (read-json jsonResponse) response))))))
-      (set! bridgeResponse bridgeResponse2)
-      (reverse bridgeResponse2))))
+                                    "/groups/0/action") 
+                          #:method 'PUT
+                          #:data
+                          (jsexpr->string state)
+                          #:headers
+                          '("Content-Type: application/json")
+                          #:content-decode '(json))])
+             (read-json jsonResponse))))
+        (else
+         (for ([i (in-range (length lights))])
+           (when (> i 1) (sleep .01))
+           (let ([state
+                  (create-hash-for-bridge
+                   (list-ref
+                    (send patch get-children)
+                    (- (list-ref lights i) 1))
+                   (send (list-ref
+                          (send patch get-children)
+                          (- (list-ref lights i) 1))
+                         get-bulb)
+                   address
+                   userName)])
+             (let-values ([(httpStatus httpHeader jsonResponse)
+                           (http-sendrecv
+                            address (string-append 
+                                     (string-append 
+                                      (string-append 
+                                       (string-append "/api/" userName) 
+                                       "/lights/") 
+                                      (number->string
+                                       (send (list-ref
+                                              (send patch get-children)
+                                              (- (list-ref lights i) 1))
+                                             get-bulb))) 
+                                     "/state")
+                            #:method 'PUT
+                            #:data
+                            (makeJsonCommand state time)
+                            #:headers
+                            '("Content-Type: application/json")
+                            #:content-decode '(json))])
+               (let ([response bridgeResponse2])
+                 (set! bridgeResponse2
+                       (cons (read-json jsonResponse) response))))))
+         (set! bridgeResponse bridgeResponse2)
+         (reverse bridgeResponse2))))))
 
 ; Procedure to update information about lighting state of every light.
 ; It pulls its data from the bridge.
