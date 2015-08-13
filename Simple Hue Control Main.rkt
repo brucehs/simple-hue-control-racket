@@ -23,22 +23,46 @@
 ; Need to set up error handling if the user tries to use the application
 ; before setting these.
 
-(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridgeAddress))
-(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'userDevice))
-(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hueUserName))
-(define deviceType (hash-ref (file->value bridgeSettingsFile) 'deviceType))
-(define appName (hash-ref (file->value bridgeSettingsFile) 'appName))
+(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridge-address))
+(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'user-device))
+(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hue-user-name))
+(define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
+(define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
 
-; Hack for Workshop: Create a main Cue List.
+; Create a main Cue List. Temporary. Eventually there will be an option for
+;; multiple cue lists.
 
 (define mainList (new cueList% [label "Main List"]))
 
-; Creating the procedures we will need.
+;; Create a patch object.
+
+(define mainPatch (new patch% [label "Main Patch"]))
+
+;; Create lights.
+
+(for ([i (in-range 1 17)])
+  (new light%
+       [label (string-append "Hue-" (number->string i))]
+       [parent mainPatch]
+       [bulb i]
+       [group 0]))
 
 ; Initialize variables for lights to send commands to and the lighting
 ; state to send.
 (define lightsToCue '(#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
-(define lightingState '(#f 1 0 0))
+;(define lightingState '(#f 1 0 0))
+(define lightingState
+  (make-hash
+   (hash->list
+    (hash
+     'on #f
+     'onChange #f
+     'bri 1
+     'briChange #f
+     'hue 0
+     'hueChange #f
+     'sat 0
+     'satChange #f))))
 
 ; We need to update the Status Window with the lights just used.
 ; This is for the "Lighting Status" Window. Data does not come from
@@ -63,24 +87,24 @@
 (define updateOn
   (lambda (state)
     (cond
-      ((equal? (list-ref state 0) #t) (set! lastOnMessage "On?: TRUE"))
-      ((equal? (list-ref state 0) #f) (set! lastOnMessage "On?: FALSE"))
+      ((equal? (hash-ref state 'on) #t) (set! lastOnMessage "On?: TRUE"))
+      ((equal? (hash-ref state 'on) #f) (set! lastOnMessage "On?: FALSE"))
       (else (set! lastOnMessage "On? ")))
     (send lastOnDisplay set-label lastOnMessage)))
 
 (define updateBri
   (lambda (state)
-    (set! lastBriMessage (string-append "Intensity: " (number->string (list-ref state 1))))
+    (set! lastBriMessage (string-append "Intensity: " (number->string (hash-ref state 'bri))))
     (send lastBriDisplay set-label lastBriMessage)))
 
 (define updateHue
   (lambda (state)
-    (set! lastHueMessage (string-append "Hue: " (number->string (list-ref state 2))))
+    (set! lastHueMessage (string-append "Hue: " (number->string (hash-ref state 'hue))))
     (send lastHueDisplay set-label lastHueMessage)))
 
 (define updateSat
   (lambda (state)
-    (set! lastSatMessage (string-append "Saturation: " (number->string (list-ref state 3))))
+    (set! lastSatMessage (string-append "Saturation: " (number->string (hash-ref state 'sat))))
     (send lastSatDisplay set-label lastSatMessage)))
 
 (define updateLastTransitiontime
@@ -214,11 +238,17 @@
 (define lightsAttributesButton (new button% [parent lightsAttributesButtonPanel]
                                     [label "Lighting State!"]
                                     [callback (lambda (button event)
-                                                (set! lightingState (list 
-                                                                     (onOrOff? (send lightsChange get-selection)) 
-                                                                     (send lightsIntensity get-value) 
-                                                                     (send lightsColor get-value) 
-                                                                     (send lightsSaturation get-value))))]))
+                                                (let ([light-objects (lightList lightsToCue)])
+                                                  (for ([i (in-range (length light-objects))])
+                                                    (send (list-ref
+                                                           (send mainPatch get-children)
+                                                           (- (list-ref light-objects i) 1))
+                                                          set-state (make-hash
+                                                                     (append
+                                                                      (on-pair lightsChange)
+                                                                      (bri-pair lightsIntensity)
+                                                                      (hue-pair lightsColor)
+                                                                      (sat-pair lightsSaturation)))))))]))
 
 ; Now we set the cue time.
 
@@ -282,10 +312,19 @@
                              [label "Save"]
                              [callback (lambda(button event)
                                          (let [(newCueName (send saveCueNameField get-value))]
-                                           (send (new cue% [label newCueName]) set-parent mainList)
+                                           (new cue% [label newCueName]
+                                                [parent mainList])
                                            (let [(newCuePosition (- (length (send mainList get-children)) 1))]
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus bridgeAddress hueUserName))
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-time (send saveCueTimeField get-value)))
+                                             (send (list-ref
+                                                    (send mainList get-children)
+                                                    newCuePosition)
+                                                   set-json
+                                                   (retrieveBridgeStatus bridgeAddress hueUserName))
+                                             (send (list-ref
+                                                    (send mainList get-children)
+                                                    newCuePosition)
+                                                   set-time
+                                                   (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
                                            (send saveCueDialog show #f)))]))
@@ -299,11 +338,15 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goLights (lightList lightsToCue) lightingState cueTime bridgeAddress hueUserName)
+                                     (goLights
+                                      (lightList lightsToCue)
+                                      mainPatch
+                                      cueTime
+                                      bridgeAddress
+                                      hueUserName)
                                      (updateLastStatus (lightList lightsToCue) lightingState cueTime)
                                      (updateAllLights
-                                      1
-                                      16
+                                      1 16
                                       lights1To8
                                       lights9To16
                                       bridgeAddress
