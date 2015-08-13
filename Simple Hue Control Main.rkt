@@ -315,8 +315,16 @@
                                            (new cue% [label newCueName]
                                                 [parent mainList])
                                            (let [(newCuePosition (- (length (send mainList get-children)) 1))]
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus bridgeAddress hueUserName))
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-time (send saveCueTimeField get-value)))
+                                             (send (list-ref
+                                                    (send mainList get-children)
+                                                    newCuePosition)
+                                                   set-json
+                                                   (retrieveBridgeStatus bridgeAddress hueUserName))
+                                             (send (list-ref
+                                                    (send mainList get-children)
+                                                    newCuePosition)
+                                                   set-time
+                                                   (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
                                            (send saveCueDialog show #f)))]))
