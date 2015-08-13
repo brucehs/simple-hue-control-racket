@@ -338,7 +338,12 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goLights (lightList lightsToCue) mainPatch cueTime bridgeAddress hueUserName)
+                                     (goLights
+                                      (lightList lightsToCue)
+                                      mainPatch
+                                      cueTime
+                                      bridgeAddress
+                                      hueUserName)
                                      (updateLastStatus (lightList lightsToCue) lightingState cueTime)
                                      (updateAllLights
                                       1 16
