@@ -38,9 +38,16 @@
 
 (define mainPatch (new patch% [label "Main Patch"]))
 
+;; Number of lights.
+
+(define number-of-lights 16)
+
+(define range-of-lights
+  (+ number-of-lights 1))
+
 ;; Create lights.
 
-(for ([i (in-range 1 17)])
+(for ([i (in-range 1 range-of-lights)])
   (new light%
        [label (string-append "Hue-" (number->string i))]
        [parent mainPatch]
