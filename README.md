@@ -9,6 +9,8 @@ This program was originally created for [Superhero Clubhouse's](http://www.super
 
 I am only providing the source code and not a compiled binary as there are still hard coded aspects (such as the user name) that will need to be changed for the program to be functional. A free download of [Dr. Racket](http://download.racket-lang.org/) is needed to run or compile the software. Moreover, familiarity with the [Philip Hue API](http://www.developers.meethue.com/philips-hue-api) is highly recommended.  
 
+The files necessary to run the program are "Simple Hue Control Main.rkt", "shc-classes.rkt", "she-settings.rkt", and "shc-show_control.rkt". If you are just downloading the files and not cloning the repository, you should put all these files into the same folder, open "Simple Hue Control Main.rkt" and the program should run and be able to be compiled to an executable. The other files are either scratch files created when figuring out portions of the program or recorded interactions while doing the same.  
+
 **Some Limitations:** 
 
 * There is currently no way to patch lights, so the bulbs must be controlled in the order that they have been registered with the Hue Bridge.  
