@@ -9,19 +9,21 @@
 
 (compile-allow-set!-undefined #t)
 
-; Creates a folder in ~/Library/Application Support/ if one does not exist.
-; Create Bridge Address and User Name files if they do not exist. Otherwise,
-; open the files.
+;; Creates a folder in ~/Library/Application Support/ if one does not exist.
+;; Create Bridge Address and User Name files if they do not exist. Otherwise,
+;; open the files.
 
 (supportDirectoryExists?)
 
-(bridgeSettingsFileExists?)
+(define setup-needed
+  (bridgeSettingsFileExists?))
 
-; Bridge Communication Variables. Communication will not work until 
-; these are set by the user.
 
-; Need to set up error handling if the user tries to use the application
-; before setting these.
+;; Bridge Communication Variables. Communication will not work until 
+;; these are set by the user.
+
+;; Need to set up error handling if the user tries to use the application
+;; before setting these.
 
 (define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridge-address))
 (define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'user-device))
@@ -29,7 +31,7 @@
 (define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
 
-; Create a main Cue List. Temporary. Eventually there will be an option for
+;; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
 
 (define mainList (new cueList% [label "Main List"]))
@@ -746,7 +748,7 @@
        [parent assigned-light-panel]
        [label (cond
                 ((< i 10)
-                (string-append "  Channel " (number->string i) "         ""Bulb:"))
+                 (string-append "  Channel " (number->string i) "         ""Bulb:"))
                 (else
                  (string-append "  Channel " (number->string i) "        ""Bulb:")))]
        [init-value (number->string
@@ -1052,3 +1054,22 @@
 (send allLights show #t)
 (send cueListWindow show #t)
 (send hueWindow show #t)
+
+;; If "Bridge Settings.shc" is newly created.
+
+(when (equal? setup-needed #f)
+  (define setup-dialog (new dialog% [parent hueWindow]
+                            [label "Setup"]))
+  (define setup-panel (new vertical-panel% [parent setup-dialog]
+                           [alignment '(center top)]))
+  (new message% [parent setup-panel]
+       [label "Please set Bridge IP address and User Name.
+Menus to do so located under the Bridge Menu."]
+       [horiz-margin 7]
+       [vert-margin 10])
+  (new button% [parent setup-panel]
+       [label "Ok"]
+       [callback
+        (lambda  (button event)
+          (send setup-dialog show #f))])
+  (send setup-dialog show #t))
