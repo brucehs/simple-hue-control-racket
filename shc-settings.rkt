@@ -40,16 +40,20 @@
   (lambda ()
     (cond
       ((not (directory-exists? supportDirectory))
-       (make-directory supportDirectory)))))
+       (make-directory supportDirectory)
+       #f)
+       (else #t))))
 
 (define bridgeSettingsFileExists?
   (lambda ()
     (cond
       ((not (file-exists? bridgeSettingsFile))
        (write-to-file
-        (hash 'bridgeAddress "0.0.0.0"
-              'userDevice ""
-              'hueUserName ""
-              'appName "simple_hue_control"
-              'deviceType "")
-        bridgeSettingsFile)))))
+        (hash 'bridge-address "0.0.0.0"
+              'user-device ""
+              'hue-user-name ""
+              'app-name "simple_hue_control"
+              'device-type "")
+        bridgeSettingsFile)
+       #f)
+      (else #t))))
