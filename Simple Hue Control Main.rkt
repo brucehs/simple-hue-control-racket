@@ -9,19 +9,21 @@
 
 (compile-allow-set!-undefined #t)
 
-; Creates a folder in ~/Library/Application Support/ if one does not exist.
-; Create Bridge Address and User Name files if they do not exist. Otherwise,
-; open the files.
+;; Creates a folder in ~/Library/Application Support/ if one does not exist.
+;; Create Bridge Address and User Name files if they do not exist. Otherwise,
+;; open the files.
 
 (supportDirectoryExists?)
 
-(bridgeSettingsFileExists?)
+(define setup-needed
+  (bridgeSettingsFileExists?))
 
-; Bridge Communication Variables. Communication will not work until 
-; these are set by the user.
 
-; Need to set up error handling if the user tries to use the application
-; before setting these.
+;; Bridge Communication Variables. Communication will not work until 
+;; these are set by the user.
+
+;; Need to set up error handling if the user tries to use the application
+;; before setting these.
 
 (define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridge-address))
 (define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'user-device))
@@ -29,7 +31,7 @@
 (define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
 
-; Create a main Cue List. Temporary. Eventually there will be an option for
+;; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
 
 (define mainList (new cueList% [label "Main List"]))
