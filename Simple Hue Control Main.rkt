@@ -1052,3 +1052,22 @@
 (send allLights show #t)
 (send cueListWindow show #t)
 (send hueWindow show #t)
+
+;; If "Bridge Settings.shc" is newly created.
+
+(when (equal? setup-needed #f)
+  (define setup-dialog (new dialog% [parent hueWindow]
+                            [label "Setup"]))
+  (define setup-panel (new vertical-panel% [parent setup-dialog]
+                           [alignment '(center top)]))
+  (new message% [parent setup-panel]
+       [label "Please set Bridge IP address and User Name.
+Menus to do so located under the Bridge Menu."]
+       [horiz-margin 7]
+       [vert-margin 10])
+  (new button% [parent setup-panel]
+       [label "Ok"]
+       [callback
+        (lambda  (button event)
+          (send setup-dialog show #f))])
+  (send setup-dialog show #t))
