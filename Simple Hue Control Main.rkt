@@ -748,7 +748,7 @@
        [parent assigned-light-panel]
        [label (cond
                 ((< i 10)
-                (string-append "  Channel " (number->string i) "         ""Bulb:"))
+                 (string-append "  Channel " (number->string i) "         ""Bulb:"))
                 (else
                  (string-append "  Channel " (number->string i) "        ""Bulb:")))]
        [init-value (number->string
