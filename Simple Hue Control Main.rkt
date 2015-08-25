@@ -727,6 +727,13 @@
                                         [label "Patch"]
                                         [callback (lambda (menu event)
                                                     (send lamp-patch-dialog show #t))]))
+(define hue-window-menu-lamp-reset-patch (new menu-item%
+                                              [parent hue-window-menu-lamp]
+                                              [label "Rest Patch 1-to-1"]
+                                              [callback (lambda (menu event)
+                                                          (set-patch-to-default!
+                                                           mainPatch
+                                                           assigned-light-panel))]))
 
 ;; Patch Dialog
 
