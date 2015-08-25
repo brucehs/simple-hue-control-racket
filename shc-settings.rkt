@@ -1,18 +1,23 @@
 #lang racket
 
+;; Provide settings files procedures.
 (provide supportDirectory
          bridgeSettingsFile
          supportDirectoryExists?
          bridgeSettingsFileExists?)
 
-; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
-; file within the Application Support directory. Ideally, this will eventually
-; become a plist file within ~/Libarary/Preferences, but I am unable to get
-; xml/plist to work at the moment.
+;; Provide patch procedures.
+(provide set-patch!
+         set-patch-to-default!)
 
-; Long-term TUDU: Test supportDirectory on Linux and Windows.
+;; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
+;; file within the Application Support directory. Ideally, this will eventually
+;; become a plist file within ~/Libarary/Preferences, but I am unable to get
+;; xml/plist to work at the moment.
 
-; Define the location of the bridge settings file and the file itself.
+;; Long-term TUDU: Test supportDirectory on Linux and Windows.
+
+;; Define the location of the bridge settings file and the file itself.
 
 (define supportDirectory
   (let ([system (system-type 'os)])
@@ -33,8 +38,8 @@
 (define bridgeSettingsFile
   (build-path supportDirectory (string->path "Bridge Settings.shc")))
 
-; Procedures for determining if the support directory and settings file exist
-; and creating them if they do not.
+;; Procedures for determining if the support directory and settings file exist
+;; and creating them if they do not.
 
 (define supportDirectoryExists?
   (lambda ()
