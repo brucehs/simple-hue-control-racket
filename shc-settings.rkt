@@ -60,5 +60,34 @@
               'app-name "simple_hue_control"
               'device-type "")
         bridgeSettingsFile)
-       #f)
+#f)
       (else #t))))
+
+;; Procedure for setting the bulb patch.
+
+(define set-patch!
+  (lambda (patch panel)
+    (for ([i (in-range
+              1
+              (+ (length (send panel get-children)) 1))])
+      (let ([bulb-patch
+             (string->number
+              (send
+               (list-ref (send panel get-children) (- i 1))
+               get-value))])
+        (send
+         (list-ref (send patch get-children) (- i 1))
+         set-bulb bulb-patch)))))
+
+;; Procedure for reseting patch 1-to-1.
+
+(define set-patch-to-default!
+  (lambda (patch panel)
+    (for ([i (in-range (length (send panel get-children)))])
+      (send
+       (list-ref (send panel get-children) i)
+       set-value (number->string (+ i 1)))
+      (send
+       (list-ref (send patch get-children) i)
+       set-bulb (+ i 1)))
+    (send panel refresh)))
