@@ -47,7 +47,7 @@
       ((not (directory-exists? supportDirectory))
        (make-directory supportDirectory)
        #f)
-       (else #t))))
+      (else #t))))
 
 (define bridgeSettingsFileExists?
   (lambda ()
@@ -60,7 +60,7 @@
               'app-name "simple_hue_control"
               'device-type "")
         bridgeSettingsFile)
-#f)
+       #f)
       (else #t))))
 
 ;; Procedure for setting the bulb patch.
