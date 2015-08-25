@@ -773,6 +773,9 @@
 (define patch-set-button (new button% [parent patch-button-panel]
                               [label "Set"]
                               [callback (lambda (button event)
+                                          (set-patch!
+                                           mainPatch
+                                           assigned-light-panel)
                                           (send lamp-patch-dialog show #f))]
                               [horiz-margin 15]))
 
