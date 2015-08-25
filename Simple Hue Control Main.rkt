@@ -336,7 +336,8 @@
                                                    (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
-                                           (send saveCueDialog show #f)))]))
+                                           (send saveCueDialog show #f)))]
+                             [style '(border)]))
 
 ; Create Go Button
 
@@ -359,7 +360,8 @@
                                       lights1To8
                                       lights9To16
                                       bridgeAddress
-                                      hueUserName))]))
+                                      hueUserName))]
+                         [style '(border)]))
 
 ; Now we need a Status Window.
 
@@ -713,7 +715,8 @@
                                         lights1To8
                                         lights9To16
                                         bridgeAddress
-                                        hueUserName))]))
+                                        hueUserName))]
+                           [style '(border)]))
 
 ; Menu Bars
 
@@ -786,6 +789,7 @@
                                            mainPatch
                                            assigned-light-panel)
                                           (send lamp-patch-dialog show #f))]
+                              [style '(border)]
                               [horiz-margin 15]))
 
 ;; Bridge Menu
@@ -834,7 +838,8 @@
                                                (lambda () (write bridgeSettings))
                                                #:mode 'text
                                                #:exists 'replace)
-                                             (send bridgeAddressDialog show #f)))]))
+                                             (send bridgeAddressDialog show #f)))]
+                               [style '(border)]))
 
 ; Set Bridge User Name Dialog
 
@@ -888,7 +893,6 @@
 (define cancelUserName (new button% [parent setUserNamePanel]
                             [label "Cancel"]
                             [callback (lambda (button event)
-                                        ;(send userDeviceNameField set-value "")
                                         (send userNameDialog show #f))]))
 (define saveUserName (new button% [parent setUserNamePanel]
                           [label "Set"]
@@ -921,7 +925,9 @@
                                            (send userNameMessage set-label
                                                  (string-append 
                                                   bridgeError 
-                                                  ". Enter Device Name (ie: My Macbook). \n Press Link Button on Bridge. Click \"Set\"."))))))]))
+                                                  ". Enter Device Name (ie: My Macbook).
+Press Link Button on Bridge. Click \"Set\"."))))))]
+                          [style '(border)]))
 
 ; Bridge Update Dialog
 
@@ -1081,5 +1087,6 @@ Menus to do so located under the Bridge Menu."]
        [label "Ok"]
        [callback
         (lambda  (button event)
-          (send setup-dialog show #f))])
+          (send setup-dialog show #f))]
+       [style '(border)])
   (send setup-dialog show #t))
