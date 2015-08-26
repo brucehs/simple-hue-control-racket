@@ -5,7 +5,8 @@
          json
          "shc-classes.rkt"
          "shc-settings.rkt"
-         "shc-show_control.rkt")
+         "shc-show_control.rkt"
+         "shc-save_load.rkt")
 
 (compile-allow-set!-undefined #t)
 
