@@ -32,6 +32,16 @@
 (define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
 
+;; Open output and input ports for saving single show file.
+
+(define saved-show-write-port
+  (open-output-file saved-show-file #:mode 'text #:exists 'must-truncate))
+
+(file-stream-buffer-mode saved-show-write-port 'line)
+
+(define saved-show-read-port
+  (open-input-file saved-show-file #:mode 'text))
+
 ;; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
 

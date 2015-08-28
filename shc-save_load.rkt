@@ -5,7 +5,9 @@
          cue-list->hash
          cue->hash)
 
-
+(provide save-show
+         prep-load-show
+         load-show)
 
 (provide patch?
          light?
@@ -22,6 +24,7 @@
 (define light->hash
   (lambda (patch light)
     (hash 'object 'light
+          'id light
           'label (send (list-ref (send patch get-children) light) get-label)
           'bulb (send (list-ref (send patch get-children) light) get-bulb)
           'group (send (list-ref (send patch get-children) light) get-group)
@@ -35,6 +38,7 @@
 (define cue->hash
   (lambda (cue-list cue)
     (hash 'object 'cue
+          'id cue
           'label (send (list-ref (send cue-list get-children) cue) get-label)
           'json (send (list-ref (send cue-list get-children) cue) get-json)
           'time (send (list-ref (send cue-list get-children) cue) get-time))))
@@ -43,13 +47,30 @@
 
 ;; TUDU: Need to extend such that they iteravely save and pull data from file.
 
-(define save-hash
-  (lambda (hsh port)
-    (writeln hsh port)))
+(define save-show
+  (lambda (patch cue-list port)
+    (file-position port 0)
+    (for ([i (in-range (length (send patch get-children)))])
+      (writeln (light->hash patch i) port))
+    (for ([i (in-range (length (send cue-list get-children)))])
+      (writeln (cue->hash cue-list i) port))))
 
-(define load-hash
+(define prep-load-show
   (lambda (port)
-  (read port)))
+    (file-position port 0)))
+
+(define load-show
+  (lambda (patch cue-list port)
+    (let ([object-hash (read port)])
+      (cond
+        ((equal? object-hash eof) '(done))
+        ((equal? (hash-ref object-hash 'object) 'light)
+         (cons
+          (hash-ref object-hash 'id); For testing purposes now. Need to write procedure to restore state to light object.
+          (load-show patch cue-list port))) 
+        ((equal? (hash-ref (read port) 'object) 'cue)
+         (cons 'cue ; For testing purposes now. Need to write procedure to restore state to cue object.
+               (load-show patch cue-list port)))))))
 
 ;; Procedures to determine type of restored object.
 

@@ -44,7 +44,8 @@
   (build-path supportDirectory (string->path "Bridge Settings.shc")))
 
 ;; The saved show file.
-(define saved-show-file (build-path supportDirectory (string->path "Saved State.shc")))
+(define saved-show-file
+  (build-path supportDirectory (string->path "Saved Show.shc")))
 
 ;; Procedures for determining if the support directory and settings file exist
 ;; and creating them if they do not.
