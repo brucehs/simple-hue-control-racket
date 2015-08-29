@@ -35,7 +35,7 @@
 ;; Open output and input ports for saving single show file.
 
 (define saved-show-write-port
-  (open-output-file saved-show-file #:mode 'text #:exists 'must-truncate))
+  (open-output-file saved-show-file #:mode 'text #:exists 'can-update))
 
 (file-stream-buffer-mode saved-show-write-port 'line)
 
@@ -729,13 +729,41 @@
                                         hueUserName))]
                            [style '(border)]))
 
-; Menu Bars
+;; Menu Bars
 
-; For Hue Window
+;; For Hue Window
 
 (define hueWindowMenuBar (new menu-bar% [parent hueWindow]))
 
-;; Lamp Window
+;; Show Menu
+
+(define hue-window-menu-show (new menu% [parent hueWindowMenuBar]
+                                  [label "Show"]))
+
+(define hue-window-menu-show-reload (new menu-item%
+                                         [parent hue-window-menu-show]
+                                         [label "Reload Previous Show"]
+                                         [callback (lambda (menu event)
+                                                     (prep-load-show saved-show-read-port)
+                                                     (load-show
+                                                      mainPatch
+                                                      mainList
+                                                      saved-show-read-port)
+                                                     (for ([i (in-range 1 range-of-lights)])
+                                                       (send
+                                                        (list-ref
+                                                         (send assigned-light-panel get-children)
+                                                         (- i 1))
+                                                        set-value
+                                                        (number->string
+                                                         (send
+                                                          (list-ref
+                                                           (send mainPatch get-children)
+                                                           (- i 1))
+                                                          get-bulb))))
+                                                     (send assigned-light-panel refresh))]))
+
+;; Lamp Menu
 
 (define hue-window-menu-lamp (new menu% [parent hueWindowMenuBar]
                                   [label "Lamp"]))
@@ -790,8 +818,6 @@
                                  [callback (lambda (button event)
                                              (send lamp-patch-dialog show #f))]
                                  [horiz-margin 15]))
-
-;; Needs procedure to actually patch the lights.
 
 (define patch-set-button (new button% [parent patch-button-panel]
                               [label "Set"]
