@@ -1,18 +1,10 @@
 #lang racket
 
-(provide patch->hash
-         light->hash
-         cue-list->hash
-         cue->hash)
+(require "shc-classes.rkt")
 
 (provide save-show
          prep-load-show
          load-show)
-
-(provide patch?
-         light?
-         cue-list?
-         cue?)
 
 ;; Procedures to save object fields to hashes.
 
@@ -66,6 +58,21 @@
       (send (list-ref (send patch get-children) id) set-group group)
       (send (list-ref (send patch get-children) id) set-state state))))
 
+;; Procedure to load cue objects back into show.
+
+(define reload-cue
+  (lambda (cue-list id hsh)
+    (letrec ([label (hash-ref hsh 'label)]
+             [time (hash-ref hsh 'time)]
+             [json (hash-ref hsh 'json)])
+      (new cue% [parent cue-list]
+           [label label]
+           [time time])
+      (send (list-ref
+             (send cue-list get-children)
+             id)
+            set-json json))))
+
 ;; Resets the saved show file to the beginning for reading purposes.
 
 (define prep-load-show
@@ -74,7 +81,7 @@
 
 ;; Main Procedure to reload the entire show data.
 
-;; TUDU: Add restoring cues.
+;; TUDU: Add deal with deleting cues.
 
 (define load-show
   (lambda (patch cue-list port)
@@ -87,31 +94,17 @@
           (hash-ref object-hash 'id)
           object-hash)
          (cons
-           (list
-            'light
-            (hash-ref object-hash 'id))
+          (list
+           'light
+           (hash-ref object-hash 'id))
           (load-show patch cue-list port))) 
         ((equal? (hash-ref object-hash 'object) 'cue)
+         (reload-cue
+          cue-list
+          (hash-ref object-hash 'id)
+          object-hash)
          (cons
           (list
            'cue
            (hash-ref object-hash 'id)); For testing purposes now. Need to write procedure to restore state to cue object.
-               (load-show patch cue-list port)))))))
-
-;; Procedures to determine type of restored object.
-
-(define patch?
-  (lambda (hsh)
-    (if (equal? (hash-ref hsh 'object) 'patch) #t #f)))
-
-(define light?
-  (lambda (hsh)
-    (if (equal? (hash-ref hsh 'object) 'light) #t #f)))
-
-(define cue-list?
-  (lambda (hsh)
-    (if (equal? (hash-ref hsh 'object) 'cue-list) #t #f)))
-
-(define cue?
-  (lambda (hsh)
-    (if (equal? (hash-ref hsh 'object) 'cue) #t #f)))
+          (load-show patch cue-list port)))))))

@@ -347,6 +347,10 @@
                                                    (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
+                                           (save-show
+                                            mainPatch
+                                            mainList
+                                            saved-show-write-port)
                                            (send saveCueDialog show #f)))]
                              [style '(border)]))
 
@@ -706,7 +710,11 @@
                                       (deleteCue 
                                        mainList 
                                        (send cueChoice get-selection))
-                                      (send cueChoice delete (send cueChoice get-selection)))]))
+                                      (send cueChoice delete (send cueChoice get-selection))
+                                      (save-show
+                                       mainPatch
+                                       mainList
+                                       saved-show-write-port))]))
 
 (define restorePanel (new horizontal-panel% [parent restoreAndDeletePanel]
                           [alignment '(right center)]))
@@ -740,6 +748,18 @@
 (define hue-window-menu-show (new menu% [parent hueWindowMenuBar]
                                   [label "Show"]))
 
+;; Procedure to repopulate "Main Cue List" window.
+;; Needs to be in GUI file, as cueChoice does not register as an argument.
+
+(define append-cues
+  (lambda (cues)
+      (cond
+        ((empty? cues) '(done))
+        (else
+         (send cueChoice append
+               (send (car cues) get-label))
+         (append-cues (cdr cues))))))
+
 (define hue-window-menu-show-reload (new menu-item%
                                          [parent hue-window-menu-show]
                                          [label "Reload Previous Show"]
@@ -749,6 +769,8 @@
                                                       mainPatch
                                                       mainList
                                                       saved-show-read-port)
+                                                     (let ([cues (send mainList get-children)])
+                                                     (append-cues cues))
                                                      (for ([i (in-range 1 range-of-lights)])
                                                        (send
                                                         (list-ref
@@ -762,6 +784,18 @@
                                                            (- i 1))
                                                           get-bulb))))
                                                      (send assigned-light-panel refresh))]))
+
+;; Procedure to clear the saved show file.
+
+(define hue-window-menu-show-clear (new menu-item%
+                                        [parent hue-window-menu-show]
+                                        [label "Clear Previous Show"]
+                                        [callback (lambda (menu event)
+                                                    (let ([cleared-show-write-port
+                                                      (open-output-file saved-show-file
+                                                                        #:mode 'text
+                                                                        #:exists 'must-truncate)])
+                                                    (close-output-port cleared-show-write-port)))]))
 
 ;; Lamp Menu
 
@@ -825,6 +859,10 @@
                                           (set-patch!
                                            mainPatch
                                            assigned-light-panel)
+                                          (save-show
+                                           mainPatch
+                                           mainList
+                                           saved-show-write-port)
                                           (send lamp-patch-dialog show #f))]
                               [style '(border)]
                               [horiz-margin 15]))
