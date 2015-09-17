@@ -5,7 +5,8 @@
          json
          "shc-classes.rkt"
          "shc-settings.rkt"
-         "shc-show_control.rkt")
+         "shc-show_control.rkt"
+         "shc-save_load.rkt")
 
 (compile-allow-set!-undefined #t)
 
@@ -30,6 +31,16 @@
 (define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hue-user-name))
 (define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
 (define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
+
+;; Open output and input ports for saving single show file.
+
+(define saved-show-write-port
+  (open-output-file saved-show-file #:mode 'text #:exists 'can-update))
+
+(file-stream-buffer-mode saved-show-write-port 'line)
+
+(define saved-show-read-port
+  (open-input-file saved-show-file #:mode 'text))
 
 ;; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
@@ -336,6 +347,10 @@
                                                    (send saveCueTimeField get-value)))
                                            (send cueChoice append newCueName)
                                            (send saveCueNameField set-value "")
+                                           (save-show
+                                            mainPatch
+                                            mainList
+                                            saved-show-write-port)
                                            (send saveCueDialog show #f)))]
                              [style '(border)]))
 
@@ -695,7 +710,12 @@
                                       (deleteCue 
                                        mainList 
                                        (send cueChoice get-selection))
-                                      (send cueChoice delete (send cueChoice get-selection)))]))
+                                      (send cueChoice delete (send cueChoice get-selection))
+                                      (clear-show saved-show-file)
+                                      (save-show
+                                       mainPatch
+                                       mainList
+                                       saved-show-write-port))]))
 
 (define restorePanel (new horizontal-panel% [parent restoreAndDeletePanel]
                           [alignment '(right center)]))
@@ -718,13 +738,63 @@
                                         hueUserName))]
                            [style '(border)]))
 
-; Menu Bars
+;; Menu Bars
 
-; For Hue Window
+;; For Hue Window
 
 (define hueWindowMenuBar (new menu-bar% [parent hueWindow]))
 
-;; Lamp Window
+;; Show Menu
+
+(define hue-window-menu-show (new menu% [parent hueWindowMenuBar]
+                                  [label "Show"]))
+
+;; Procedure to repopulate "Main Cue List" window.
+;; Needs to be in GUI file, as cueChoice does not register as an argument.
+
+(define append-cues
+  (lambda (cues)
+    (cond
+      ((empty? cues) '(done))
+      (else
+       (send cueChoice append
+             (send (car cues) get-label))
+       (append-cues (cdr cues))))))
+
+(define hue-window-menu-show-reload (new menu-item%
+                                         [parent hue-window-menu-show]
+                                         [label "Reload Previous Show"]
+                                         [callback (lambda (menu event)
+                                                     (prep-load-show saved-show-read-port)
+                                                     (load-show
+                                                      mainPatch
+                                                      mainList
+                                                      saved-show-read-port)
+                                                     (let ([cues (send mainList get-children)])
+                                                       (append-cues cues))
+                                                     (for ([i (in-range 1 range-of-lights)])
+                                                       (send
+                                                        (list-ref
+                                                         (send assigned-light-panel get-children)
+                                                         (- i 1))
+                                                        set-value
+                                                        (number->string
+                                                         (send
+                                                          (list-ref
+                                                           (send mainPatch get-children)
+                                                           (- i 1))
+                                                          get-bulb))))
+                                                     (send assigned-light-panel refresh))]))
+
+;; Procedure to clear the saved show file.
+
+(define hue-window-menu-show-clear (new menu-item%
+                                        [parent hue-window-menu-show]
+                                        [label "Clear Previous Show"]
+                                        [callback (lambda (menu event)
+                                                    (clear-show saved-show-file))]))
+
+;; Lamp Menu
 
 (define hue-window-menu-lamp (new menu% [parent hueWindowMenuBar]
                                   [label "Lamp"]))
@@ -738,7 +808,11 @@
                                               [callback (lambda (menu event)
                                                           (set-patch-to-default!
                                                            mainPatch
-                                                           assigned-light-panel))]))
+                                                           assigned-light-panel)
+                                                          (save-show
+                                                           mainPatch
+                                                           mainList
+                                                           saved-show-write-port))]))
 
 ;; Patch Dialog
 
@@ -780,14 +854,16 @@
                                              (send lamp-patch-dialog show #f))]
                                  [horiz-margin 15]))
 
-;; Needs procedure to actually patch the lights.
-
 (define patch-set-button (new button% [parent patch-button-panel]
                               [label "Set"]
                               [callback (lambda (button event)
                                           (set-patch!
                                            mainPatch
                                            assigned-light-panel)
+                                          (save-show
+                                           mainPatch
+                                           mainList
+                                           saved-show-write-port)
                                           (send lamp-patch-dialog show #f))]
                               [style '(border)]
                               [horiz-margin 15]))

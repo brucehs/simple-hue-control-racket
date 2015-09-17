@@ -1,9 +1,14 @@
 #lang racket
 
-;; Provide settings files procedures.
+;; Provide settings files.
 (provide supportDirectory
-         bridgeSettingsFile
-         supportDirectoryExists?
+         bridgeSettingsFile)
+
+;; Saved show file.
+(provide saved-show-file)
+
+;; Setting files procedures.
+(provide supportDirectoryExists?
          bridgeSettingsFileExists?)
 
 ;; Provide patch procedures.
@@ -37,6 +42,10 @@
 
 (define bridgeSettingsFile
   (build-path supportDirectory (string->path "Bridge Settings.shc")))
+
+;; The saved show file.
+(define saved-show-file
+  (build-path supportDirectory (string->path "Saved Show.shc")))
 
 ;; Procedures for determining if the support directory and settings file exist
 ;; and creating them if they do not.
