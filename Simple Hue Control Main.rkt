@@ -711,6 +711,7 @@
                                        mainList 
                                        (send cueChoice get-selection))
                                       (send cueChoice delete (send cueChoice get-selection))
+                                      (clear-show saved-show-file)
                                       (save-show
                                        mainPatch
                                        mainList
@@ -753,12 +754,12 @@
 
 (define append-cues
   (lambda (cues)
-      (cond
-        ((empty? cues) '(done))
-        (else
-         (send cueChoice append
-               (send (car cues) get-label))
-         (append-cues (cdr cues))))))
+    (cond
+      ((empty? cues) '(done))
+      (else
+       (send cueChoice append
+             (send (car cues) get-label))
+       (append-cues (cdr cues))))))
 
 (define hue-window-menu-show-reload (new menu-item%
                                          [parent hue-window-menu-show]
@@ -770,7 +771,7 @@
                                                       mainList
                                                       saved-show-read-port)
                                                      (let ([cues (send mainList get-children)])
-                                                     (append-cues cues))
+                                                       (append-cues cues))
                                                      (for ([i (in-range 1 range-of-lights)])
                                                        (send
                                                         (list-ref
@@ -791,11 +792,7 @@
                                         [parent hue-window-menu-show]
                                         [label "Clear Previous Show"]
                                         [callback (lambda (menu event)
-                                                    (let ([cleared-show-write-port
-                                                      (open-output-file saved-show-file
-                                                                        #:mode 'text
-                                                                        #:exists 'must-truncate)])
-                                                    (close-output-port cleared-show-write-port)))]))
+                                                    (clear-show saved-show-file))]))
 
 ;; Lamp Menu
 
@@ -811,7 +808,11 @@
                                               [callback (lambda (menu event)
                                                           (set-patch-to-default!
                                                            mainPatch
-                                                           assigned-light-panel))]))
+                                                           assigned-light-panel)
+                                                          (save-show
+                                                           mainPatch
+                                                           mainList
+                                                           saved-show-write-port))]))
 
 ;; Patch Dialog
 

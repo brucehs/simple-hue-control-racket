@@ -3,6 +3,7 @@
 (require "shc-classes.rkt")
 
 (provide save-show
+         clear-show
          prep-load-show
          load-show)
 
@@ -35,7 +36,7 @@
           'json (send (list-ref (send cue-list get-children) cue) get-json)
           'time (send (list-ref (send cue-list get-children) cue) get-time))))
 
-;; Procedure to save and load object fields to/from show file.
+;; Procedure to save object fields to show file.
 
 (define save-show
   (lambda (patch cue-list port)
@@ -44,6 +45,16 @@
       (writeln (light->hash patch i) port))
     (for ([i (in-range (length (send cue-list get-children)))])
       (writeln (cue->hash cue-list i) port))))
+
+;; Procedure to clear show file. Needed to work around deleting cues.
+
+(define clear-show
+  (lambda (show-file)
+    (let ([cleared-show-write-port
+           (open-output-file show-file
+                             #:mode 'text
+                             #:exists 'must-truncate)])
+      (close-output-port cleared-show-write-port))))
 
 ;; Procedure to load light object data back into show.
 
