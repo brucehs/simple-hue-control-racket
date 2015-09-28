@@ -157,3 +157,7 @@
         (<= group 16))
        #t)
       (else #f))))
+
+;; For Testing. Comment out when not in use.
+
+;(define main-list (new cue-list% [label "Main Cue List"]))
