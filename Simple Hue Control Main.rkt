@@ -305,54 +305,66 @@
                            [label "Save"]
                            [min-height 50]
                            [callback (lambda (button event)
-                                       (send saveCueDialog show #t))]))
+                                       (send save-cue-dialog show #t))]))
 ; Create A Dialog for Saving Cues.
 
-(define saveCueDialog (new dialog% [parent hueWindow]
-                           [label "Save Cue"]))
-(define saveCueNamePanel (new horizontal-panel% [parent saveCueDialog]
-                              [alignment '(left center)]
-                              [min-width 200]))
-(define saveCueNameField (new text-field% [parent saveCueNamePanel]
-                              [label "Cue Name:"]))
-(define saveCueTimeField (new text-field% [parent saveCueNamePanel]
-                              [label "Cue Time:"]))
+(define save-cue-dialog (new dialog% [parent hueWindow]
+                             [label "Save Cue"]))
+(define save-cue-panel (new horizontal-panel% [parent save-cue-dialog]
+                            [alignment '(left center)]
+                            [min-width 200]))
+(define save-cue-number-field (new text-field% [parent save-cue-panel]
+                                   [label "Cue Number:"]))
+(define save-cue-name-field (new text-field% [parent save-cue-panel]
+                                 [label "Cue Name:"]))
+(define save-cue-time-field (new text-field% [parent save-cue-panel]
+                                 [label "Cue Time:"]))
 
-(define saveCueButtonPanel (new horizontal-panel% [parent saveCueDialog]
-                                [alignment '(right center)]
-                                [min-width 200]))
+(define save-cue-button-panel (new horizontal-panel% [parent save-cue-dialog]
+                                   [alignment '(right center)]
+                                   [min-width 200]))
 
-(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send saveCueNameField set-value "")
-                                             (send saveCueDialog show #f))]))
+(define save-cue-cancel (new button% [parent save-cue-button-panel]
+                             [label "Cancel"]
+                             [callback (lambda (button event)
+                                         (send save-cue-name-field set-value "")
+                                         (send save-cue-dialog show #f))]))
 
-(define saveCueOKButton (new button% [parent saveCueButtonPanel]
-                             [label "Save"]
-                             [callback (lambda(button event)
-                                         (let [(newCueName (send saveCueNameField get-value))]
-                                           (new cue% [label newCueName]
-                                                [parent mainList])
-                                           (let [(newCuePosition (- (length (send mainList get-children)) 1))]
-                                             (send (list-ref
-                                                    (send mainList get-children)
-                                                    newCuePosition)
-                                                   set-json
-                                                   (retrieveBridgeStatus bridgeAddress hueUserName))
-                                             (send (list-ref
-                                                    (send mainList get-children)
-                                                    newCuePosition)
-                                                   set-time
-                                                   (send saveCueTimeField get-value)))
-                                           (send cueChoice append newCueName)
-                                           (send saveCueNameField set-value "")
-                                           (save-show
-                                            mainPatch
-                                            mainList
-                                            saved-show-write-port)
-                                           (send saveCueDialog show #f)))]
-                             [style '(border)]))
+(define save-cue-ok (new button% [parent save-cue-button-panel]
+                         [label "Save"]
+                         [callback (lambda (button event)
+                                     (let* ([new-cue-name (send save-cue-name-field get-value)]
+                                            [new-cue-number
+                                             (string->number (send save-cue-number-field get-value))]
+                                            [new-cue-time (send save-cue-time-field get-value)])
+                                       (new cue%
+                                            [number new-cue-number]
+                                            [label new-cue-name]
+                                            [parent mainList]
+                                            ;[json-value (retrieveBridgeStatus bridgeAddress hueUserName)]
+                                            [time
+                                             (cond
+                                               ;; Makes sure time is a number. If not, sets it to 0.
+                                               ;; If so, converts it to milliseconds.
+                                               ((equal? (string->number new-cue-time) #f) 0)
+                                               (else (inexact->exact (* (string->number new-cue-time) 10))))])
+                                       (send cueChoice clear)
+                                       (let ([cues (send mainList get-children)])
+                                         (for ([i (in-range (length cues))])
+                                           (send cueChoice append (string-append (number->string (send (list-ref cues i) get-number))
+                                                                                 ". "
+                                                                                 (send (list-ref cues i) get-label)
+                                                                                 " - "
+                                                                                 (number->string (/ (send (list-ref cues i) get-time) 10))))))
+                                       (send save-cue-name-field set-value "")
+                                       (send save-cue-number-field set-value
+                                             (number->string (+ new-cue-number 1))))
+                                     (save-show
+                                      mainPatch
+                                      mainList
+                                      saved-show-write-port)
+                                     (send save-cue-dialog show #f))]
+                         [style '(border)]))
 
 ; Create Go Button
 
