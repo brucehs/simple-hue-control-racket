@@ -336,18 +336,14 @@
                                      (let* ([new-cue-name (send save-cue-name-field get-value)]
                                             [new-cue-number
                                              (string->number (send save-cue-number-field get-value))]
-                                            [new-cue-time (send save-cue-time-field get-value)])
-                                       (new cue%
+                                            [new-cue-time
+                                             (string->number (send save-cue-time-field get-value))])
+                                       (new cue+c%
                                             [number new-cue-number]
                                             [label new-cue-name]
                                             [parent mainList]
                                             ;[json-value (retrieveBridgeStatus bridgeAddress hueUserName)]
-                                            [time
-                                             (cond
-                                               ;; Makes sure time is a number. If not, sets it to 0.
-                                               ;; If so, converts it to milliseconds.
-                                               ((equal? (string->number new-cue-time) #f) 0)
-                                               (else (inexact->exact (* (string->number new-cue-time) 10))))])
+                                            [time (* new-cue-time 10)])
                                        (send cueChoice clear)
                                        (let ([cues (send mainList get-children)])
                                          (for ([i (in-range (length cues))])
@@ -355,7 +351,8 @@
                                                                                  ". "
                                                                                  (send (list-ref cues i) get-label)
                                                                                  " - "
-                                                                                 (number->string (/ (send (list-ref cues i) get-time) 10))))))
+                                                                                 (number->string (/ (send (list-ref cues i) get-time) 10))
+                                                                                 "s"))))
                                        (send save-cue-name-field set-value "")
                                        (send save-cue-number-field set-value
                                              (number->string (+ new-cue-number 1))))

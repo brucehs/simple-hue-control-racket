@@ -76,7 +76,7 @@
     (letrec ([label (hash-ref hsh 'label)]
              [time (hash-ref hsh 'time)]
              [json (hash-ref hsh 'json)])
-      (new cue% [parent cue-list]
+      (new cue+c% [parent cue-list]
            [label label]
            [time time])
       (send (list-ref
