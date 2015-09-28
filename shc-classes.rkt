@@ -1,7 +1,7 @@
 #lang racket
 
 (provide cue-list%
-         cue%
+         cue+c%
          patch%
          light%)
 
@@ -59,12 +59,7 @@
     (define/public (set-json new-json)
       (set-field! json-value this new-json))
     (define/public (set-time new-time)
-      (cond
-        ((equal? (string->number new-time) #f)
-         (set-field! time this 0))
-        (else
-         (set-field! time this
-                     (inexact->exact (* (string->number new-time) 10))))))
+      (set-field! time this (* new-time 10)))
     (begin
       (let ([child-lst (get-field children parent)])
         (cond
@@ -77,6 +72,15 @@
           (else (set-field! children parent
                             (append (get-field children parent)
                                     (list this)))))))))
+
+(define/contract cue+c%
+  (class/c (init-field [number natural-number/c])
+           (init-field [label string?])
+           (init-field [parent object?])
+           (init-field [json-value hash?])
+           (init-field [time (or/c (=/c 0)
+                                   natural-number/c)]))
+  cue%)
 
 ;; Procedures for determining whether a cue needs to be inserted.
 (define cue-numbers
