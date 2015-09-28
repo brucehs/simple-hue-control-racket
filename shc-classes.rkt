@@ -26,21 +26,20 @@
 (define cue%
   (class object%
     (super-new)
-    (define state-json     (hash
-                            'on #t
-                            'bri 0
-                            'hue 0
-                            'sat 0
-                            'xy (list 0 0)
-                            'ct 0
-                            'alert "none"
-                            'effect "none"
-                            'colormode "hs"
-                            'reachable #t))
     (init-field number)
     (init-field label)
     (init-field parent)
-    (init-field [json-value (hash 'light state-json
+    (init-field [json-value (hash 'light (hash
+                                          'on #t
+                                          'bri 0
+                                          'hue 0
+                                          'sat 0
+                                          'xy (list 0 0)
+                                          'ct 0
+                                          'alert "none"
+                                          'effect "none"
+                                          'colormode "hs"
+                                          'reachable #t)
                                   'type "Extended color light"
                                   'name "Generic Name"
                                   'modelid "LCT001"
