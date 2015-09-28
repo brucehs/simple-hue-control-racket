@@ -45,7 +45,7 @@
 ;; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
 
-(define mainList (new cueList% [label "Main List"]))
+(define mainList (new cue-list% [label "Main List"]))
 
 ;; Create a patch object.
 

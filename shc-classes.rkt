@@ -1,6 +1,6 @@
 #lang racket
 
-(provide cueList%
+(provide cue-list%
          cue%
          patch%
          light%)
@@ -11,10 +11,10 @@
 ; available via an API call. It may be better to ask the user to specify
 ; a time upon saving a cue.
 
-(define cueList%
+(define cue-list%
   (class object%
     (super-new)
-    (init-field [label ""])
+    (init-field label)
     (init-field [children '()])
     (define/public (get-label) label)
     (define/public (get-children) children)
@@ -26,44 +26,74 @@
 (define cue%
   (class object%
     (super-new)
-    (define stateJson     (hash
-                           'on #t
-                           'bri 0
-                           'hue 0
-                           'sat 0
-                           'xy (list 0 0)
-                           'ct 0
-                           'alert "none"
-                           'effect "none"
-                           'colormode "hs"
-                           'reachable #t))
-    (init-field [label ""])
-    (init-field [jsonResponse (hash 'light stateJson
-                                    'type "Extended color light"
-                                    'name "Generic Name"
-                                    'modelid "LCT001"
-                                    'swversion "")])
-    (init-field [parent '(object:cueList%)])
-    ; Time is in milliseconds. Does not need to be adjusted when sent to bridge.
+    (define state-json     (hash
+                            'on #t
+                            'bri 0
+                            'hue 0
+                            'sat 0
+                            'xy (list 0 0)
+                            'ct 0
+                            'alert "none"
+                            'effect "none"
+                            'colormode "hs"
+                            'reachable #t))
+    (init-field number)
+    (init-field label)
+    (init-field parent)
+    (init-field [json-value (hash 'light state-json
+                                  'type "Extended color light"
+                                  'name "Generic Name"
+                                  'modelid "LCT001"
+                                  'swversion "")])
+    ;; Time is in milliseconds.
+    ;; Does not need to be adjusted when sent to bridge.
     (init-field [time 4])
+    (define/public (get-number) number)
     (define/public (get-label) label)
     (define/public (get-parent) parent)
-    (define/public (get-json) jsonResponse)
+    (define/public (get-json) json-value)
     (define/public (get-time) time)
-    (define/public (set-label newLabel)
-      (set-field! label this newLabel))
-    (define/public (set-json newJson)
-      (set-field! jsonResponse this newJson))
-    (define/public (set-time newTime)
+    (define/public (set-number new-number)
+      (set-field! number this new-number))
+    (define/public (set-label new-label)
+      (set-field! label this new-label))
+    (define/public (set-json new-json)
+      (set-field! json-value this new-json))
+    (define/public (set-time new-time)
       (cond
-        ((equal? (string->number newTime) #f)
+        ((equal? (string->number new-time) #f)
          (set-field! time this 0))
         (else
          (set-field! time this
-                     (inexact->exact (* (string->number newTime) 10))))))
-    (begin (set-field! children parent
-                                    (append (get-field children parent)
-                                            (list this))))))
+                     (inexact->exact (* (string->number new-time) 10))))))
+    (begin
+      (let ([child-lst (get-field children parent)])
+        (cond
+          ((member? number (cue-numbers child-lst))
+           (let-values ([(pre-lst post-lst) (split-at child-lst (- number 1))])
+             (for/list ([cue post-lst])
+               (send cue set-number (+ (send cue get-number) 1)))
+             (set-field! children parent
+                         (append pre-lst (list this) post-lst))))
+          (else (set-field! children parent
+                            (append (get-field children parent)
+                                    (list this)))))))))
+
+;; Procedures for determining whether a cue needs to be inserted.
+(define cue-numbers
+  (lambda (cues)
+    (cond
+      ((empty? cues) '())
+      (else
+       (cons (send (car cues) get-number)
+             (cue-numbers (cdr cues)))))))
+
+(define member?
+  (lambda (item lst)
+    (cond
+      ((empty? lst) #f)
+      ((equal? item (car lst)) #t)
+      (else (member? item (cdr lst))))))
 
 ; A Lights Class to allow for grouping and level comparison for restoring cues.
 ; Also a Patch Class to act as a parent for all lights
