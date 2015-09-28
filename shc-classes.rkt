@@ -86,8 +86,8 @@
 (define light%
   (class object%
     (super-new)
+    (init-field parent)
     (init-field [label ""])
-    (init-field [parent '()])
     (init-field [bulb 1])
     (init-field [group 0])
     (init-field [state (hash
@@ -100,31 +100,31 @@
     (define/public (get-bulb) bulb)
     (define/public (get-group) group)
     (define/public (get-state) state)
-    (define/public (set-label newLabel)
-      (set-field! label this newLabel))
+    (define/public (set-label new-label)
+      (set-field! label this new-label))
     (define/public (set-bulb new-bulb)
       (set-field! bulb this new-bulb))
-    (define/public (set-group newGroup)
+    (define/public (set-group new-group)
       (cond
-        ((isGroup? newGroup)
-         (set-field! group this newGroup))))
+        ((isGroup? new-group)
+         (set-field! group this new-group))))
     (define/public (set-state newState)
       (cond
         ((hash? newState)
          (set-field! state this newState))))
     (begin (set-field! children parent
-                                    (append (get-field children parent)
-                                            (list this))))))
+                       (append (get-field children parent)
+                               (list this))))))
 
 ; Procedure for determining if an assigned group number is valid.
 
 (define isGroup?
-    (lambda (group)
-      (cond
-        ((and
-          (and
-           (exact-nonnegative-integer? group)
-           (>= group 0))
-          (<= group 16))
-         #t)
-        (else #f))))
+  (lambda (group)
+    (cond
+      ((and
+        (and
+         (exact-nonnegative-integer? group)
+         (>= group 0))
+        (<= group 16))
+       #t)
+      (else #f))))
