@@ -342,7 +342,7 @@
                                             [number new-cue-number]
                                             [label new-cue-name]
                                             [parent mainList]
-                                            ;[json-value (retrieveBridgeStatus bridgeAddress hueUserName)]
+                                            [json-value (retrieveBridgeStatus bridgeAddress hueUserName)]
                                             [time (* new-cue-time 10)])
                                        (send cueChoice clear)
                                        (let ([cues (send mainList get-children)])
@@ -767,7 +767,12 @@
       ((empty? cues) '(done))
       (else
        (send cueChoice append
-             (send (car cues) get-label))
+             (string-append (number->string (send (car cues) get-number))
+                            ". "
+                            (send (car cues) get-label)
+                            " - "
+                            (number->string (/ (send (car cues) get-time) 10))
+                            "s"))
        (append-cues (cdr cues))))))
 
 (define hue-window-menu-show-reload (new menu-item%

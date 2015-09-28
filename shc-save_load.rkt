@@ -32,6 +32,7 @@
   (lambda (cue-list cue)
     (hash 'object 'cue
           'id cue
+          'number (send (list-ref (send cue-list get-children) cue) get-number)
           'label (send (list-ref (send cue-list get-children) cue) get-label)
           'json (send (list-ref (send cue-list get-children) cue) get-json)
           'time (send (list-ref (send cue-list get-children) cue) get-time))))
@@ -75,10 +76,12 @@
   (lambda (cue-list id hsh)
     (letrec ([label (hash-ref hsh 'label)]
              [time (hash-ref hsh 'time)]
-             [json (hash-ref hsh 'json)])
+             [json (hash-ref hsh 'json)]
+             [number (hash-ref hsh 'number)])
       (new cue+c% [parent cue-list]
            [label label]
-           [time time])
+           [time time]
+           [number number])
       (send (list-ref
              (send cue-list get-children)
              id)
