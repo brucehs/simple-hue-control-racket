@@ -5,42 +5,62 @@
          json
          "shc-classes.rkt"
          "shc-settings.rkt"
-         "shc-show_control.rkt")
+         "shc-show_control.rkt"
+         "shc-save_load.rkt")
 
 (compile-allow-set!-undefined #t)
 
-; Creates a folder in ~/Library/Application Support/ if one does not exist.
-; Create Bridge Address and User Name files if they do not exist. Otherwise,
-; open the files.
+;; Creates a folder in ~/Library/Application Support/ if one does not exist.
+;; Create Bridge Address and User Name files if they do not exist. Otherwise,
+;; open the files.
 
 (supportDirectoryExists?)
 
-(bridgeSettingsFileExists?)
+(define setup-needed
+  (bridgeSettingsFileExists?))
 
-; Bridge Communication Variables. Communication will not work until 
-; these are set by the user.
 
-; Need to set up error handling if the user tries to use the application
-; before setting these.
+;; Bridge Communication Variables. Communication will not work until 
+;; these are set by the user.
 
-(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridgeAddress))
-(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'userDevice))
-(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hueUserName))
-(define deviceType (hash-ref (file->value bridgeSettingsFile) 'deviceType))
-(define appName (hash-ref (file->value bridgeSettingsFile) 'appName))
+;; Need to set up error handling if the user tries to use the application
+;; before setting these.
 
-; Create a main Cue List. Temporary. Eventually there will be an option for
+(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridge-address))
+(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'user-device))
+(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hue-user-name))
+(define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
+(define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
+
+;; Open output and input ports for saving single show file.
+
+(define saved-show-write-port
+  (open-output-file saved-show-file #:mode 'text #:exists 'can-update))
+
+(file-stream-buffer-mode saved-show-write-port 'line)
+
+(define saved-show-read-port
+  (open-input-file saved-show-file #:mode 'text))
+
+;; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
 
-(define mainList (new cueList% [label "Main List"]))
+(define mainList (new cue-list% [label "Main List"]))
 
 ;; Create a patch object.
 
 (define mainPatch (new patch% [label "Main Patch"]))
 
+;; Number of lights.
+
+(define number-of-lights 16)
+
+(define range-of-lights
+  (+ number-of-lights 1))
+
 ;; Create lights.
 
-(for ([i (in-range 1 17)])
+(for ([i (in-range 1 range-of-lights)])
   (new light%
        [label (string-append "Hue-" (number->string i))]
        [parent mainPatch]
@@ -248,11 +268,7 @@
                                                                       (on-pair lightsChange)
                                                                       (bri-pair lightsIntensity)
                                                                       (hue-pair lightsColor)
-                                                                      (sat-pair lightsSaturation))))))
-                                                (onChange? lightsChange lightingState)
-                                                (briChange? lightsIntensity lightingState) 
-                                                (hueChange? lightsColor lightingState) 
-                                                (satChange? lightsSaturation lightingState))]))
+                                                                      (sat-pair lightsSaturation)))))))]))
 
 ; Now we set the cue time.
 
@@ -289,41 +305,63 @@
                            [label "Save"]
                            [min-height 50]
                            [callback (lambda (button event)
-                                       (send saveCueDialog show #t))]))
+                                       (send save-cue-dialog show #t))]))
 ; Create A Dialog for Saving Cues.
 
-(define saveCueDialog (new dialog% [parent hueWindow]
-                           [label "Save Cue"]))
-(define saveCueNamePanel (new horizontal-panel% [parent saveCueDialog]
-                              [alignment '(left center)]
-                              [min-width 200]))
-(define saveCueNameField (new text-field% [parent saveCueNamePanel]
-                              [label "Cue Name:"]))
-(define saveCueTimeField (new text-field% [parent saveCueNamePanel]
-                              [label "Cue Time:"]))
+(define save-cue-dialog (new dialog% [parent hueWindow]
+                             [label "Save Cue"]))
+(define save-cue-panel (new horizontal-panel% [parent save-cue-dialog]
+                            [alignment '(left center)]
+                            [min-width 200]))
+(define save-cue-number-field (new text-field% [parent save-cue-panel]
+                                   [label "Cue Number:"]))
+(define save-cue-name-field (new text-field% [parent save-cue-panel]
+                                 [label "Cue Name:"]))
+(define save-cue-time-field (new text-field% [parent save-cue-panel]
+                                 [label "Cue Time:"]))
 
-(define saveCueButtonPanel (new horizontal-panel% [parent saveCueDialog]
-                                [alignment '(right center)]
-                                [min-width 200]))
+(define save-cue-button-panel (new horizontal-panel% [parent save-cue-dialog]
+                                   [alignment '(right center)]
+                                   [min-width 200]))
 
-(define saveCueCancelButton (new button% [parent saveCueButtonPanel]
-                                 [label "Cancel"]
-                                 [callback (lambda (button event)
-                                             (send saveCueNameField set-value "")
-                                             (send saveCueDialog show #f))]))
+(define save-cue-cancel (new button% [parent save-cue-button-panel]
+                             [label "Cancel"]
+                             [callback (lambda (button event)
+                                         (send save-cue-name-field set-value "")
+                                         (send save-cue-dialog show #f))]))
 
-(define saveCueOKButton (new button% [parent saveCueButtonPanel]
-                             [label "Save"]
-                             [callback (lambda(button event)
-                                         (let [(newCueName (send saveCueNameField get-value))]
-                                           (new cue% [label newCueName]
-                                                [parent mainList])
-                                           (let [(newCuePosition (- (length (send mainList get-children)) 1))]
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-json (retrieveBridgeStatus bridgeAddress hueUserName))
-                                             (send (list-ref (send mainList get-children) newCuePosition) set-time (send saveCueTimeField get-value)))
-                                           (send cueChoice append newCueName)
-                                           (send saveCueNameField set-value "")
-                                           (send saveCueDialog show #f)))]))
+(define save-cue-ok (new button% [parent save-cue-button-panel]
+                         [label "Save"]
+                         [callback (lambda (button event)
+                                     (let* ([new-cue-name (send save-cue-name-field get-value)]
+                                            [new-cue-number
+                                             (string->number (send save-cue-number-field get-value))]
+                                            [new-cue-time
+                                             (string->number (send save-cue-time-field get-value))])
+                                       (new cue+c%
+                                            [number new-cue-number]
+                                            [label new-cue-name]
+                                            [parent mainList]
+                                            [json-value (retrieveBridgeStatus bridgeAddress hueUserName)]
+                                            [time (* new-cue-time 10)])
+                                       (send cueChoice clear)
+                                       (let ([cues (send mainList get-children)])
+                                         (for ([i (in-range (length cues))])
+                                           (send cueChoice append (string-append (number->string (send (list-ref cues i) get-number))
+                                                                                 ". "
+                                                                                 (send (list-ref cues i) get-label)
+                                                                                 " - "
+                                                                                 (number->string (/ (send (list-ref cues i) get-time) 10))
+                                                                                 "s"))))
+                                       (send save-cue-name-field set-value "")
+                                       (send save-cue-number-field set-value
+                                             (number->string (+ new-cue-number 1))))
+                                     (save-show
+                                      mainPatch
+                                      mainList
+                                      saved-show-write-port)
+                                     (send save-cue-dialog show #f))]
+                         [style '(border)]))
 
 ; Create Go Button
 
@@ -334,15 +372,20 @@
                          [label "GO!"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goLights (bulbs-to-change mainPatch (lightList lightsToCue)) lightingState cueTime bridgeAddress hueUserName)
+                                     (goLights
+                                      (lightList lightsToCue)
+                                      mainPatch
+                                      cueTime
+                                      bridgeAddress
+                                      hueUserName)
                                      (updateLastStatus (lightList lightsToCue) lightingState cueTime)
                                      (updateAllLights
-                                      1
-                                      16
+                                      1 16
                                       lights1To8
                                       lights9To16
                                       bridgeAddress
-                                      hueUserName))]))
+                                      hueUserName))]
+                         [style '(border)]))
 
 ; Now we need a Status Window.
 
@@ -676,7 +719,12 @@
                                       (deleteCue 
                                        mainList 
                                        (send cueChoice get-selection))
-                                      (send cueChoice delete (send cueChoice get-selection)))]))
+                                      (send cueChoice delete (send cueChoice get-selection))
+                                      (clear-show saved-show-file)
+                                      (save-show
+                                       mainPatch
+                                       mainList
+                                       saved-show-write-port))]))
 
 (define restorePanel (new horizontal-panel% [parent restoreAndDeletePanel]
                           [alignment '(right center)]))
@@ -696,15 +744,145 @@
                                         lights1To8
                                         lights9To16
                                         bridgeAddress
-                                        hueUserName))]))
+                                        hueUserName))]
+                           [style '(border)]))
 
-; Menu Bars
+;; Menu Bars
 
-; For Hue Window
+;; For Hue Window
 
 (define hueWindowMenuBar (new menu-bar% [parent hueWindow]))
 
-; Bridge Menu
+;; Show Menu
+
+(define hue-window-menu-show (new menu% [parent hueWindowMenuBar]
+                                  [label "Show"]))
+
+;; Procedure to repopulate "Main Cue List" window.
+;; Needs to be in GUI file, as cueChoice does not register as an argument.
+
+(define append-cues
+  (lambda (cues)
+    (cond
+      ((empty? cues) '(done))
+      (else
+       (send cueChoice append
+             (string-append (number->string (send (car cues) get-number))
+                            ". "
+                            (send (car cues) get-label)
+                            " - "
+                            (number->string (/ (send (car cues) get-time) 10))
+                            "s"))
+       (append-cues (cdr cues))))))
+
+(define hue-window-menu-show-reload (new menu-item%
+                                         [parent hue-window-menu-show]
+                                         [label "Reload Previous Show"]
+                                         [callback (lambda (menu event)
+                                                     (prep-load-show saved-show-read-port)
+                                                     (load-show
+                                                      mainPatch
+                                                      mainList
+                                                      saved-show-read-port)
+                                                     (let ([cues (send mainList get-children)])
+                                                       (append-cues cues))
+                                                     (for ([i (in-range 1 range-of-lights)])
+                                                       (send
+                                                        (list-ref
+                                                         (send assigned-light-panel get-children)
+                                                         (- i 1))
+                                                        set-value
+                                                        (number->string
+                                                         (send
+                                                          (list-ref
+                                                           (send mainPatch get-children)
+                                                           (- i 1))
+                                                          get-bulb))))
+                                                     (send assigned-light-panel refresh))]))
+
+;; Procedure to clear the saved show file.
+
+(define hue-window-menu-show-clear (new menu-item%
+                                        [parent hue-window-menu-show]
+                                        [label "Clear Previous Show"]
+                                        [callback (lambda (menu event)
+                                                    (clear-show saved-show-file))]))
+
+;; Lamp Menu
+
+(define hue-window-menu-lamp (new menu% [parent hueWindowMenuBar]
+                                  [label "Lamp"]))
+(define hue-window-menu-lamp-patch (new menu-item% [parent hue-window-menu-lamp]
+                                        [label "Patch"]
+                                        [callback (lambda (menu event)
+                                                    (send lamp-patch-dialog show #t))]))
+(define hue-window-menu-lamp-reset-patch (new menu-item%
+                                              [parent hue-window-menu-lamp]
+                                              [label "Rest Patch 1-to-1"]
+                                              [callback (lambda (menu event)
+                                                          (set-patch-to-default!
+                                                           mainPatch
+                                                           assigned-light-panel)
+                                                          (save-show
+                                                           mainPatch
+                                                           mainList
+                                                           saved-show-write-port))]))
+
+;; Patch Dialog
+
+(define lamp-patch-dialog (new dialog% [label "Patch Lamps"]
+                               [min-width 300]
+                               [min-height 800]))
+
+(define assigned-light-panel (new vertical-panel% [parent lamp-patch-dialog]
+                                  [alignment '(left top)]
+                                  [horiz-margin 10]
+                                  [vert-margin 15]
+                                  [min-width 50]
+                                  [min-height 600]))
+
+(for ([i (in-range 1 range-of-lights)])
+  (new text-field%
+       [parent assigned-light-panel]
+       [label (cond
+                ((< i 10)
+                 (string-append "  Channel " (number->string i) "         ""Bulb:"))
+                (else
+                 (string-append "  Channel " (number->string i) "        ""Bulb:")))]
+       [init-value (number->string
+                    (send
+                     (list-ref (send mainPatch get-children) (- i 1))
+                     get-bulb))]
+       [min-width 40]
+       [stretchable-width 40]
+       [vert-margin 5]))
+
+(define patch-button-panel (new horizontal-panel% [parent lamp-patch-dialog]
+                                [alignment '(center bottom)]
+                                [horiz-margin 10]
+                                [vert-margin 15]))
+
+(define patch-cancel-button (new button% [parent patch-button-panel]
+                                 [label "Cancel"]
+                                 [callback (lambda (button event)
+                                             (send lamp-patch-dialog show #f))]
+                                 [horiz-margin 15]))
+
+(define patch-set-button (new button% [parent patch-button-panel]
+                              [label "Set"]
+                              [callback (lambda (button event)
+                                          (set-patch!
+                                           mainPatch
+                                           assigned-light-panel)
+                                          (save-show
+                                           mainPatch
+                                           mainList
+                                           saved-show-write-port)
+                                          (send lamp-patch-dialog show #f))]
+                              [style '(border)]
+                              [horiz-margin 15]))
+
+;; Bridge Menu
 (define hueWindowMenuBridge (new menu% [parent hueWindowMenuBar]
                                  [label "Bridge"]))
 (define hueWindowMenuBridgeBridgeAddress (new menu-item% [parent hueWindowMenuBridge]
@@ -721,7 +899,7 @@
                                                [callback (lambda (menu event)
                                                            (send updateFirmwareDialog show #t))]))
 
-; Set Bridge Address Dialog
+;; Set Bridge Address Dialog
 (define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
                                  [min-width 300]
                                  [min-height 100]))
@@ -750,7 +928,8 @@
                                                (lambda () (write bridgeSettings))
                                                #:mode 'text
                                                #:exists 'replace)
-                                             (send bridgeAddressDialog show #f)))]))
+                                             (send bridgeAddressDialog show #f)))]
+                               [style '(border)]))
 
 ; Set Bridge User Name Dialog
 
@@ -804,7 +983,6 @@
 (define cancelUserName (new button% [parent setUserNamePanel]
                             [label "Cancel"]
                             [callback (lambda (button event)
-                                        ;(send userDeviceNameField set-value "")
                                         (send userNameDialog show #f))]))
 (define saveUserName (new button% [parent setUserNamePanel]
                           [label "Set"]
@@ -837,7 +1015,9 @@
                                            (send userNameMessage set-label
                                                  (string-append 
                                                   bridgeError 
-                                                  ". Enter Device Name (ie: My Macbook). \n Press Link Button on Bridge. Click \"Set\"."))))))]))
+                                                  ". Enter Device Name (ie: My Macbook).
+Press Link Button on Bridge. Click \"Set\"."))))))]
+                          [style '(border)]))
 
 ; Bridge Update Dialog
 
@@ -980,3 +1160,23 @@
 (send allLights show #t)
 (send cueListWindow show #t)
 (send hueWindow show #t)
+
+;; If "Bridge Settings.shc" is newly created.
+
+(when (equal? setup-needed #f)
+  (define setup-dialog (new dialog% [parent hueWindow]
+                            [label "Setup"]))
+  (define setup-panel (new vertical-panel% [parent setup-dialog]
+                           [alignment '(center top)]))
+  (new message% [parent setup-panel]
+       [label "Please set Bridge IP address and User Name.
+Menus to do so located under the Bridge Menu."]
+       [horiz-margin 7]
+       [vert-margin 10])
+  (new button% [parent setup-panel]
+       [label "Ok"]
+       [callback
+        (lambda  (button event)
+          (send setup-dialog show #f))]
+       [style '(border)])
+  (send setup-dialog show #t))

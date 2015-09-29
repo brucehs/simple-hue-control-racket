@@ -4,40 +4,27 @@
          net/uri-codec
          json)
 
-; Provide Main Light Adjustments.
+;; Provide Main Light Adjustments.
 (provide getLights
          lightList
-         onChange?
-         briChange?
-         hueChange?
-         satChange?
          on-pair
          bri-pair
          hue-pair
          sat-pair
          bridgeResponse
-         onOrOff?
-         makeJsonCommand
-         bulbs-to-change
          goLights)
 
-; Provide Updating Light Status.
+;; Provide Updating Light Status.
 (provide initialOnMessage
          initialBriMessage
          initialHueMessage
          initialSatMessage
          updateAllLights)
 
-; Provide Cue Manipulation.
+;; Provide Cue Manipulation.
 (provide retrieveBridgeStatus
          restoreCue
          deleteCue)
-
-;; Provide lighting state comparisons.
-(provide get-light-state
-         compare-light-state
-         wanted-state->list
-         create-hash-for-bridge)
 
 ; Procedures for translating selection in the "Select Lights to Cue" panel
 ; to data to be sent to the bridge.
@@ -72,7 +59,7 @@
   (lambda (whichLights)
     (getHuesToCue huesToCue whichLights)))
 
-; Translates lightingState on/off value from 0 or 1 to #t or #f.
+;; Translates lightingState on/off value from 0 or 1 to #t or #f.
 
 (define onOrOff?
   (lambda (state)
@@ -80,68 +67,157 @@
       ((equal? state 0) #t)
       (else #f))))
 
-; Procedures to determine whether lighting variables have changed.
-; There is an issue in which pressing the "Lighting State" button
-; twice will set the change states to #f.
-
-; TUDU: Create more sophisticated procedures that query the bridge
-; directly. May need to create a light% class and a state field
-; and instantiate an object for each light. This will allow
-; patching as well.
-
-(define onChange?
-  (lambda (radio-box state)
-    (cond
-      ((equal?
-        (onOrOff? (send radio-box get-selection))
-        (hash-ref state 'on))
-       (hash-set! state 'onChange #f))
-      (else
-       (hash-set! state 'on (onOrOff? (send radio-box get-selection)))
-       (hash-set! state 'onChange #t)))))
-
-(define briChange?
-  (lambda (slider state)
-    (cond
-      ((equal? (send slider get-value) (hash-ref state 'bri))
-       (hash-set! state 'briChange #f))
-      (else
-       (hash-set! state 'bri (send slider get-value))
-       (hash-set! state 'briChange #t)))))
-
-(define hueChange?
-  (lambda (slider state)
-    (cond
-      ((equal? (send slider get-value) (hash-ref state 'hue))
-       (hash-set! state 'hueChange #f))
-      (else
-       (hash-set! state 'hue (send slider get-value))
-       (hash-set! state 'hueChange #t)))))
-
-(define satChange?
-  (lambda (slider state)
-    (cond
-      ((equal? (send slider get-value) (hash-ref state 'sat))
-       (hash-set! state 'satChange #f))
-      (else
-       (hash-set! state 'sat (send slider get-value))
-       (hash-set! state 'satChange #t)))))
+;; Procedures to assign lighting states to light% objects.
 
 (define on-pair
-    (lambda (radio-box)
-      (list (cons 'on (onOrOff? (send radio-box get-selection))))))
+  (lambda (radio-box)
+    (list (cons 'on (onOrOff? (send radio-box get-selection))))))
 
 (define bri-pair
-    (lambda (slider)
-      (list (cons 'bri (send slider get-value)))))
+  (lambda (slider)
+    (list (cons 'bri (send slider get-value)))))
 
 (define hue-pair
-    (lambda (slider)
-      (list (cons 'hue (send slider get-value)))))
+  (lambda (slider)
+    (list (cons 'hue (send slider get-value)))))
 
 (define sat-pair
-    (lambda (slider)
-      (list (cons 'sat (send slider get-value)))))
+  (lambda (slider)
+    (list (cons 'sat (send slider get-value)))))
+
+;; Procedures for comparing light% object states to their bulbs
+;; state in the bridge.
+
+(define get-light-state
+  (lambda (lightNumber address userName)
+    (hash-ref
+     (hash-ref
+      (retrieveBridgeStatus address userName)
+      (string->symbol (number->string lightNumber)))
+     'state)))
+
+;; Procedures for direct change.
+
+(define compare-light-state
+  (lambda (hueObject lightNumber address userName)
+    (make-hash
+     (list
+      (cond
+        ((equal? (hash-ref (send hueObject get-state) 'on)
+                 (hash-ref (get-light-state lightNumber address userName) 'on))
+         (cons 'onChange #f))
+        (else
+         (cons 'onChange #t)))
+      (cond
+        ((equal? (hash-ref (send hueObject get-state) 'bri)
+                 (hash-ref (get-light-state lightNumber address userName) 'bri))
+         (cons 'briChange #f))
+        (else
+         (cons 'briChange #t)))
+      (cond
+        ((equal? (hash-ref (send hueObject get-state) 'hue)
+                 (hash-ref (get-light-state lightNumber address userName) 'hue))
+         (cons 'hueChange #f))
+        (else
+         (cons 'hueChange #t)))
+      (cond
+        ((equal? (hash-ref (send hueObject get-state) 'sat)
+                 (hash-ref (get-light-state lightNumber address userName) 'sat))
+         (cons 'satChange #f))
+        (else
+         (cons 'satChange #t)))))))
+
+(define wanted-state->list
+  (lambda (key hue-object)
+    (list (cons key (hash-ref (send hue-object get-state) key)))))
+
+(define create-hash-for-bridge
+  (lambda (hue-object light-number address user-name)
+    (make-hash
+     (append
+      (hash->list (compare-light-state
+                   hue-object
+                   light-number
+                   address
+                   user-name))
+      (wanted-state->list 'on hue-object)
+      (wanted-state->list 'bri hue-object)
+      (wanted-state->list 'hue hue-object)
+      (wanted-state->list 'sat hue-object)))))
+
+;; Procedure for Restoring Cue
+
+(define compare-light-state-in-cue
+  (lambda (cue-list cue-number light-number address user-name)
+    (let ([cue-light-state
+           (hash-ref
+            (hash-ref
+             (send
+              (list-ref
+               (send cue-list get-children)
+               cue-number)
+              get-json)
+             (string->symbol (number->string light-number)))
+            'state)])
+      (make-hash
+       (list
+        (cond
+          ((equal? (hash-ref cue-light-state 'on)
+                   (hash-ref
+                    (get-light-state light-number address user-name)
+                    'on))
+           (cons 'onChange #f))
+          (else
+           (cons 'onChange #t)))
+        (cond
+          ((equal? (hash-ref cue-light-state 'bri)
+                   (hash-ref
+                    (get-light-state light-number address user-name)
+                    'bri))
+           (cons 'briChange #f))
+          (else
+           (cons 'briChange #t)))
+        (cond
+          ((equal? (hash-ref cue-light-state 'hue)
+                   (hash-ref
+                    (get-light-state light-number address user-name)
+                    'hue))
+           (cons 'hueChange #f))
+          (else
+           (cons 'hueChange #t)))
+        (cond
+          ((equal? (hash-ref cue-light-state 'sat)
+                   (hash-ref
+                    (get-light-state light-number address user-name)
+                    'sat))
+           (cons 'satChange #f))
+          (else
+           (cons 'satChange #t))))))))
+
+(define create-restore-hash-for-bridge
+    (lambda (cue-list cue-number light-number address user-name)
+      (let ([cue-light-state
+             (hash-ref
+              (hash-ref
+               (send
+                (list-ref
+                 (send cue-list get-children)
+                 cue-number)
+                get-json)
+               (string->symbol (number->string light-number)))
+              'state)])
+        (make-hash
+         (append
+          (hash->list (compare-light-state-in-cue
+                       cue-list
+                       cue-number
+                       light-number
+                       address
+                       user-name))
+          (list (cons 'on (hash-ref cue-light-state 'on)))
+          (list (cons 'bri (hash-ref cue-light-state 'bri)))
+          (list (cons 'hue (hash-ref cue-light-state 'hue)))
+          (list (cons 'sat (hash-ref cue-light-state 'sat))))))))
 
 ; Procedures for creating a json command with just the variables
 ; that have changed.
@@ -172,6 +248,9 @@
          '(() ())))
       (cons 'transitiontime time)))))
 
+;; TUDU, create a special circumastance if the only json command is
+;; is "transitiontime" and abort the send.
+
 (define makeJsonCommand
   (lambda (state time)
     (let ([hashCommand (hashForJson state time)])
@@ -180,42 +259,76 @@
          (hash-remove! hashCommand '())))
       (jsexpr->string hashCommand))))
 
-; Procedure for sending a a lighting state to the Bridge.
-; Now requires a Bridge IP address and Bridge User Name variables,
-; so can be used with multiple bridges in necessary.
-; Returns a list with the bridge's response for each light.
-; Not in the ideal fashion (it uses set!), but it works for the moment.
-; I'm unsure of how to get the data from jsonResponse out of its
-; local binding without using set!. It does not return from the function
-; if called within the for loop.
-
-; TUDU, create a special circumstance when sending a command to all the lights
-; that uses group 0.
+;; Procedure for sending a a lighting state to the Bridge.
+;; Now requires a Bridge IP address and Bridge User Name variables,
+;; so can be used with multiple bridges in necessary.
+;; Returns a list with the bridge's response for each light.
+;; Not in the ideal fashion (it uses set!), but it works for the moment.
+;; I'm unsure of how to get the data from jsonResponse out of its
+;; local binding without using set!. It does not return from the function
+;; if called within the for loop.
 
 (define goLights
-  (lambda (lights state time address userName)
+  (lambda (lights patch time address userName)
     (let ([bridgeResponse2 '()])
-      (for ([i (in-range (length lights))])
-        (let-values ([(httpStatus httpHeader jsonResponse)
-                      (http-sendrecv
-                       address (string-append 
-                                (string-append 
-                                 (string-append 
-                                  (string-append "/api/" userName) 
-                                  "/lights/") 
-                                 (number->string (list-ref lights i))) 
-                                "/state")
-                       #:method 'PUT
-                       #:data
-                       (makeJsonCommand state time)
-                       #:headers
-                       '("Content-Type: application/json")
-                       #:content-decode '(json))])
-          (let ([response bridgeResponse2])
-            (set! bridgeResponse2
-                  (cons (read-json jsonResponse) response)))))
-      (set! bridgeResponse bridgeResponse2)
-      (reverse bridgeResponse2))))
+      (cond
+        ((and (equal? (length lights) 16)
+              (<= time 10))
+         (let ([state
+                (make-hash
+                 (cons
+                  (cons 'transitiontime time)
+                  (hash->list (send (list-ref (send patch get-children) 0) get-state))))])
+           (let-values ([(httpStatus httpHeader jsonResponse)
+                         (http-sendrecv
+                          address  (string-append 
+                                    (string-append "/api/" userName) 
+                                    "/groups/0/action") 
+                          #:method 'PUT
+                          #:data
+                          (jsexpr->string state)
+                          #:headers
+                          '("Content-Type: application/json")
+                          #:content-decode '(json))])
+             (read-json jsonResponse))))
+        (else
+         (for ([i (in-range (length lights))])
+           (when (> i 1) (sleep .01))
+           (let ([state
+                  (create-hash-for-bridge
+                   (list-ref
+                    (send patch get-children)
+                    (- (list-ref lights i) 1))
+                   (send (list-ref
+                          (send patch get-children)
+                          (- (list-ref lights i) 1))
+                         get-bulb)
+                   address
+                   userName)])
+             (let-values ([(httpStatus httpHeader jsonResponse)
+                           (http-sendrecv
+                            address (string-append 
+                                     (string-append 
+                                      (string-append 
+                                       (string-append "/api/" userName) 
+                                       "/lights/") 
+                                      (number->string
+                                       (send (list-ref
+                                              (send patch get-children)
+                                              (- (list-ref lights i) 1))
+                                             get-bulb))) 
+                                     "/state")
+                            #:method 'PUT
+                            #:data
+                            (makeJsonCommand state time)
+                            #:headers
+                            '("Content-Type: application/json")
+                            #:content-decode '(json))])
+               (let ([response bridgeResponse2])
+                 (set! bridgeResponse2
+                       (cons (read-json jsonResponse) response))))))
+         (set! bridgeResponse bridgeResponse2)
+         (reverse bridgeResponse2))))))
 
 ; Procedure to update information about lighting state of every light.
 ; It pulls its data from the bridge.
@@ -376,34 +489,38 @@
   (lambda (cueList cueNumber numberOfLights address userName)
     (let ([bridgeResponse2 '()])
       (for ([i (in-range 1 numberOfLights)])
-        (let ([lightState (getOneJsonState cueList cueNumber i)])
-          (let-values ([(httpStatus httpHeader jsonResponse)
-                        (http-sendrecv
-                         address (string-append 
-                                  (string-append 
-                                   (string-append 
-                                    (string-append "/api/" userName) 
-                                    "/lights/") 
-                                   (number->string i)) 
-                                  "/state")
-                         #:method 'PUT
-                         #:data
-                         (jsexpr->string
-                          (hash 'on (hash-ref lightState 'on)
-                                'bri (hash-ref lightState 'bri)
-                                'hue (hash-ref lightState 'hue)
-                                'sat (hash-ref lightState 'sat)
-                                'transitiontime (send
-                                                 (list-ref
-                                                  (send cueList get-children)
-                                                  cueNumber)
-                                                 get-time)))
-                         #:headers
-                         '("Content-Type: application/json")
-                         #:content-decode '(json))])
-            (let ([response bridgeResponse2])
-              (set! bridgeResponse2
-                    (cons (read-json jsonResponse) response))))))
+        (when (> i 1) (sleep .01))
+        (let ([lightState
+               (create-restore-hash-for-bridge
+                cueList
+                cueNumber
+                i
+                address
+                userName)])
+          (let ([time
+                 (send 
+                  (list-ref
+                   (send cueList get-children)
+                   cueNumber)
+                  get-time)])
+            (let-values ([(httpStatus httpHeader jsonResponse)
+                          (http-sendrecv
+                           address (string-append 
+                                    (string-append 
+                                     (string-append 
+                                      (string-append "/api/" userName) 
+                                      "/lights/") 
+                                     (number->string i)) 
+                                    "/state")
+                           #:method 'PUT
+                           #:data
+                           (makeJsonCommand lightState time)
+                           #:headers
+                           '("Content-Type: application/json")
+                           #:content-decode '(json))])
+              (let ([response bridgeResponse2])
+                (set! bridgeResponse2
+                      (cons (read-json jsonResponse) response)))))))
       (set! bridgeResponse bridgeResponse2)
       (reverse bridgeResponse2))))
 
@@ -416,68 +533,3 @@
                   (split-at (send cueList get-children) position)])
       (send cueList set-children (append cueList1 (drop cueList2 1))))
     (collect-garbage)))
-
-; Procedures for comparing cues to current light state
-
-(define get-light-state
-  (lambda (lightNumber address userName)
-    (hash-ref
-     (hash-ref
-      (retrieveBridgeStatus address userName)
-      (string->symbol (number->string lightNumber)))
-     'state)))
-
-(define compare-light-state
-  (lambda (hueObject lightNumber address userName)
-    (make-hash
-     (list
-      (cond
-        ((equal? (hash-ref (send hueObject get-state) 'on)
-                 (hash-ref (get-light-state lightNumber address userName) 'on))
-         (cons 'onChange #f))
-        (else
-         (cons 'onChange #t)))
-      (cond
-        ((equal? (hash-ref (send hueObject get-state) 'bri)
-                 (hash-ref (get-light-state lightNumber address userName) 'bri))
-         (cons 'briChange #f))
-        (else
-         (cons 'briChange #t)))
-      (cond
-        ((equal? (hash-ref (send hueObject get-state) 'hue)
-                 (hash-ref (get-light-state lightNumber address userName) 'hue))
-         (cons 'hueChange #f))
-        (else
-         (cons 'hueChange #t)))
-      (cond
-        ((equal? (hash-ref (send hueObject get-state) 'sat)
-                 (hash-ref (get-light-state lightNumber address userName) 'sat))
-         (cons 'satChange #f))
-        (else
-         (cons 'satChange #t)))))))
-
-(define wanted-state->list
-  (lambda (key hue-object)
-    (list (cons key (hash-ref (send hue-object get-state) key)))))
-
-(define create-hash-for-bridge
-  (lambda (hue-object light-number address user-name)
-    (make-hash
-     (append
-      (hash->list (compare-light-state
-                   hue-object
-                   light-number
-                   address
-                   user-name))
-      (wanted-state->list 'on hue-object)
-      (wanted-state->list 'bri hue-object)
-      (wanted-state->list 'hue hue-object)
-      (wanted-state->list 'sat hue-object)))))
-
-(define bulbs-to-change
-    (lambda (patch lights)
-      (let ([bulb-list '()])
-        (for ([i (in-range (length lights))])
-            (set! bulb-list
-                  (cons (send (list-ref (send patch get-children) (- (list-ref lights i) 1)) get-bulb) bulb-list)))
-        (reverse bulb-list))))

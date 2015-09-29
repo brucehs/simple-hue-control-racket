@@ -1,17 +1,19 @@
 # simple-hue-control-racket
-Simple Program to Control Philip Hue Lights in a Theatrical Setting. Currently written in Racket.  
+Simple Program to Control Philips hue Lights in a Theatrical Setting. Currently written in Racket.  
 
 ## Overview
 
-This program was originally created for [Superhero Clubhouse's](http://www.superheroclubhouse.org) 2015-07 workshop of [*Earth*](http://www.superheroclubhouse.org/earth/). The project took place in a studio setting, without a theatrical lighting system, and half the play was created by the audience during the event. In order to collaborate with the ensemble in real time, I used [Philip Hue Bulbs](http://www2.meethue.com/en-us/) as they provide wireless control and color changing ability. I am providing the code of the program I created for those who wish to produce their own production of *Earth* from the Atlas or for those who want to experiment with other theatrical uses of these bulbs.  
+This program was originally created for [Superhero Clubhouse's](http://www.superheroclubhouse.org) 2015-07 workshop of [*Earth*](http://www.superheroclubhouse.org/earth/). The project took place in a studio setting, without a theatrical lighting system, and half the play was created by the audience during the event. In order to collaborate with the ensemble in real time, I used [Philips hue Bulbs](http://www2.meethue.com/en-us/) as they provide wireless control and color changing ability. I am providing the code of the program I created for those who wish to produce their own production of *Earth* from the Atlas or for those who want to experiment with other theatrical uses of these bulbs.  
 
 ## Notes
 
-I am only providing the source code and not a compiled binary as there are still hard coded aspects (such as the user name) that will need to be changed for the program to be functional. A free download of [Dr. Racket](http://download.racket-lang.org/) is needed to run or compile the software. Moreover, familiarity with the [Philip Hue API](http://www.developers.meethue.com/philips-hue-api) is highly recommended.  
+I am only providing the source code and not a compiled binary as there are still hard coded aspects (such as the user name) that will need to be changed for the program to be functional. A free download of [Dr. Racket](http://download.racket-lang.org/) is needed to run or compile the software. Moreover, familiarity with the [Philips hue API](http://www.developers.meethue.com/philips-hue-api) is highly recommended.  
+
+The files necessary to run the program are "Simple Hue Control Main.rkt", "shc-classes.rkt", "she-settings.rkt", and "shc-show_control.rkt". If you are just downloading the files and not cloning the repository, you should put all these files into the same folder, open "Simple Hue Control Main.rkt" and the program should run and be able to be compiled to an executable. The other files are either scratch files created when figuring out portions of the program or recorded interactions while doing the same.  
 
 **Some Limitations:** 
 
-* There is currently no way to patch lights, so the bulbs must be controlled in the order that they have been registered with the Hue Bridge.  
+* There is currently no way to patch lights, so the bulbs must be controlled in the order that they have been registered with the hue Bridge.  
 
 * The Bridge Address and Bridge User Name must be set before the program will function. They are available in the Bridge Menu that appears when the main, "Simple Hue Control", window is in the foreground. Currently, there is no error handling and the program will crash if it is used before these values are set.  
 

@@ -1,18 +1,28 @@
 #lang racket
 
+;; Provide settings files.
 (provide supportDirectory
-         bridgeSettingsFile
-         supportDirectoryExists?
+         bridgeSettingsFile)
+
+;; Saved show file.
+(provide saved-show-file)
+
+;; Setting files procedures.
+(provide supportDirectoryExists?
          bridgeSettingsFileExists?)
 
-; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
-; file within the Application Support directory. Ideally, this will eventually
-; become a plist file within ~/Libarary/Preferences, but I am unable to get
-; xml/plist to work at the moment.
+;; Provide patch procedures.
+(provide set-patch!
+         set-patch-to-default!)
 
-; Long-term TUDU: Test supportDirectory on Linux and Windows.
+;; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
+;; file within the Application Support directory. Ideally, this will eventually
+;; become a plist file within ~/Libarary/Preferences, but I am unable to get
+;; xml/plist to work at the moment.
 
-; Define the location of the bridge settings file and the file itself.
+;; Long-term TUDU: Test supportDirectory on Linux and Windows.
+
+;; Define the location of the bridge settings file and the file itself.
 
 (define supportDirectory
   (let ([system (system-type 'os)])
@@ -33,23 +43,60 @@
 (define bridgeSettingsFile
   (build-path supportDirectory (string->path "Bridge Settings.shc")))
 
-; Procedures for determining if the support directory and settings file exist
-; and creating them if they do not.
+;; The saved show file.
+(define saved-show-file
+  (build-path supportDirectory (string->path "Saved Show.shc")))
+
+;; Procedures for determining if the support directory and settings file exist
+;; and creating them if they do not.
 
 (define supportDirectoryExists?
   (lambda ()
     (cond
       ((not (directory-exists? supportDirectory))
-       (make-directory supportDirectory)))))
+       (make-directory supportDirectory)
+       #f)
+      (else #t))))
 
 (define bridgeSettingsFileExists?
   (lambda ()
     (cond
       ((not (file-exists? bridgeSettingsFile))
        (write-to-file
-        (hash 'bridgeAddress "0.0.0.0"
-              'userDevice ""
-              'hueUserName ""
-              'appName "simple_hue_control"
-              'deviceType "")
-        bridgeSettingsFile)))))
+        (hash 'bridge-address "0.0.0.0"
+              'user-device ""
+              'hue-user-name ""
+              'app-name "simple_hue_control"
+              'device-type "")
+        bridgeSettingsFile)
+       #f)
+      (else #t))))
+
+;; Procedure for setting the bulb patch.
+
+(define set-patch!
+  (lambda (patch panel)
+    (for ([i (in-range
+              1
+              (+ (length (send panel get-children)) 1))])
+      (let ([bulb-patch
+             (string->number
+              (send
+               (list-ref (send panel get-children) (- i 1))
+               get-value))])
+        (send
+         (list-ref (send patch get-children) (- i 1))
+         set-bulb bulb-patch)))))
+
+;; Procedure for reseting patch 1-to-1.
+
+(define set-patch-to-default!
+  (lambda (patch panel)
+    (for ([i (in-range (length (send panel get-children)))])
+      (send
+       (list-ref (send panel get-children) i)
+       set-value (number->string (+ i 1)))
+      (send
+       (list-ref (send patch get-children) i)
+       set-bulb (+ i 1)))
+    (send panel refresh)))
