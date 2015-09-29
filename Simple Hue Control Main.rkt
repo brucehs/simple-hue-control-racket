@@ -130,7 +130,7 @@
 (define updateLastTransitiontime
   (lambda (time)
     (cond
-      ((= cueTime 0) (set! lastTransitiontimeMessage "Cue Time: 0 seconds"))
+      ((= cue-time 0) (set! lastTransitiontimeMessage "Cue Time: 0 seconds"))
       (else (set! lastTransitiontimeMessage (string-append (string-append "Cue Time: " (number->string (/ time 10))) " seconds"))))
     (send lastTransitiontimeDisplay set-label lastTransitiontimeMessage)))
 
@@ -145,76 +145,76 @@
 
 ; Now it is time to create the main interaction window.
 
-(define hueWindow (new frame% [label "Simple Hue Control"]))
+(define control-window (new frame% [label "Simple Hue Control"]))
 
 ; Next we create the panel to select the lights to control.
 
-(define lightsSelect (new vertical-panel% [parent hueWindow]
+(define lights-select (new vertical-panel% [parent control-window]
                           [style '(border)]))
 
-(define lightsSelectTitle (new horizontal-panel% [parent lightsSelect]
+(define lights-select-title (new horizontal-panel% [parent lights-select]
                                [alignment '(center center)]))
-(new message% [parent lightsSelectTitle]
+(new message% [parent lights-select-title]
      [label "Select Lights to Cue"])
 
-(define lightsSelectPanelTop (new horizontal-panel% [parent lightsSelect]
+(define lights-select-panel-top (new horizontal-panel% [parent lights-select]
                                   [alignment '(center center)]
                                   [spacing 10]))
-(define lightsSelectPanelBottom (new horizontal-panel% [parent lightsSelect]
+(define lights-select-panel-bottom (new horizontal-panel% [parent lights-select]
                                      [alignment '(center center)]
                                      [border 4]
                                      [spacing 3]))
 
-(define lightsSelectPanelButtons (new horizontal-panel% [parent lightsSelect]
+(define lights-select-panel-buttons (new horizontal-panel% [parent lights-select]
                                       [alignment '(center center)]
                                       [border 4]
                                       [spacing 3]))
 
-(define lightsSelectPanelAccessButtons (new horizontal-panel% [parent lightsSelectPanelButtons]
+(define lights-select-panel-access-buttons (new horizontal-panel% [parent lights-select-panel-buttons]
                                             [alignment '(left center)]
                                             [border 4]
                                             [spacing 3]))
 
-(define lightsSelectPanelSelectButton (new horizontal-panel% [parent lightsSelectPanelButtons]
+(define lights-select-panel-select-button (new horizontal-panel% [parent lights-select-panel-buttons]
                                            [alignment '(right center)]
                                            [border 4]
                                            [spacing 3]))
 
 ; Create some check boxes to select lights.
 (for ([i (in-range 1 9)])
-  (new check-box% [parent lightsSelectPanelTop]
+  (new check-box% [parent lights-select-panel-top]
        [label (string-append "LX " (~a i))]
        [value #f]))
 (for ([i (in-range 9 17)])
-  (new check-box% [parent lightsSelectPanelBottom]
+  (new check-box% [parent lights-select-panel-bottom]
        [label (string-append "LX " (~a i))]
        [value #f]))
 
-(define lightsSelectButton (new button% [parent lightsSelectPanelSelectButton]
-                                [label "Lights!"]
+(define lights-select-button (new button% [parent lights-select-panel-select-button]
+                                [label "Lights"]
                                 [callback (lambda (button event)
-                                            (set! lightsToCue (getLights
-                                                               (send lightsSelectPanelTop get-children)
-                                                               (send lightsSelectPanelBottom get-children))))]))
+                                            (set! lightsToCue (get-lights
+                                                               (send lights-select-panel-top get-children)
+                                                               (send lights-select-panel-bottom get-children))))]))
 
-(define lightsClearButton (new button% [parent lightsSelectPanelAccessButtons]
+(define lights-clear-button (new button% [parent lights-select-panel-access-buttons]
                                [label "Clear"]
                                [callback (lambda (button event)
                                            (for ([i (in-range 8)])
-                                             (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #f))
+                                             (send (list-ref (send lights-select-panel-top get-children) i) set-value #f))
                                            (for ([i (in-range 8)])
-                                             (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #f)))]))
+                                             (send (list-ref (send lights-select-panel-bottom get-children) i) set-value #f)))]))
 
-(define lightsSelectAllButton (new button% [parent lightsSelectPanelAccessButtons]
+(define lights-select-all-button (new button% [parent lights-select-panel-access-buttons]
                                    [label "Select All"]
                                    [callback (lambda (button event)
                                                (for ([i (in-range 8)])
-                                                 (send (list-ref (send lightsSelectPanelTop get-children) i) set-value #t))
+                                                 (send (list-ref (send lights-select-panel-top get-children) i) set-value #t))
                                                (for ([i (in-range 8)])
-                                                 (send (list-ref (send lightsSelectPanelBottom get-children) i) set-value #t)))]))
+                                                 (send (list-ref (send lights-select-panel-bottom get-children) i) set-value #t)))]))
 
 ; Next is the panel for setting the attributes.
-(define lightsAttributes (new vertical-panel% [parent hueWindow]
+(define lightsAttributes (new vertical-panel% [parent control-window]
                               [style '(border)]))
 (define lightsOn (new horizontal-panel% [parent lightsAttributes]))
 (define lightsChange (new radio-box% [parent lightsOn]
@@ -272,43 +272,43 @@
 
 ; Now we set the cue time.
 
-(define cueTime 1)
+(define cue-time 1)
 
-(define cueTimePanel (new horizontal-panel% [parent hueWindow]
+(define cue-time-panel (new horizontal-panel% [parent control-window]
                           [style '(border)]))
 
-(define cueTimeField (new text-field% [parent cueTimePanel]
+(define cue-time-field (new text-field% [parent cue-time-panel]
                           [label "Cue Time in Seconds"]))
 
-(define setCueTimeButton (new button% [parent cueTimePanel]
-                              [label "Set Time!"]
+(define cue-time-button (new button% [parent cue-time-panel]
+                              [label "Time"]
                               [callback (lambda (button event)
                                           (cond
-                                            ((not (number? (string->number (send cueTimeField get-value))))
-                                             (set! cueTime 0))
+                                            ((not (number? (string->number (send cue-time-field get-value))))
+                                             (set! cue-time 0))
                                             (else
-                                             (set! cueTime
-                                                   (inexact->exact (* (string->number (send cueTimeField get-value)) 10))))))]))
+                                             (set! cue-time
+                                                   (inexact->exact (* (string->number (send cue-time-field get-value)) 10))))))]))
 
 ; Now we need to send the cue to the bridge and save the cue.
 ; The Save Cue button saves the current lighting state. NOT the one about
 ; to be sent.
 
-(define cueGoAndSavePanel (new horizontal-panel% [parent hueWindow]
+(define cue-set-save-panel (new horizontal-panel% [parent control-window]
                                [style '(border)]
                                [alignment '(center center)]))
 
-(define cueSavePanel (new horizontal-panel% [parent cueGoAndSavePanel]
+(define cue-save-panel (new horizontal-panel% [parent cue-set-save-panel]
                           [alignment '(left center)]))
 
-(define cueSaveButton (new button% [parent cueSavePanel]
+(define cue-save-button (new button% [parent cue-save-panel]
                            [label "Save"]
                            [min-height 50]
                            [callback (lambda (button event)
                                        (send save-cue-dialog show #t))]))
 ; Create A Dialog for Saving Cues.
 
-(define save-cue-dialog (new dialog% [parent hueWindow]
+(define save-cue-dialog (new dialog% [parent control-window]
                              [label "Save Cue"]))
 (define save-cue-panel (new horizontal-panel% [parent save-cue-dialog]
                             [alignment '(left center)]
@@ -365,21 +365,21 @@
 
 ; Create Go Button
 
-(define cueGoPanel (new horizontal-panel% [parent cueGoAndSavePanel]
+(define cue-set-panel (new horizontal-panel% [parent cue-set-save-panel]
                         [alignment '(right center)]))
 
-(define cueGoButton (new button% [parent cueGoPanel]
-                         [label "GO!"]
+(define cue-set-button (new button% [parent cue-set-panel]
+                         [label "Set"]
                          [min-height 50]
                          [callback (lambda (button event)
-                                     (goLights
+                                     (set-lights!
                                       (lightList lightsToCue)
                                       mainPatch
-                                      cueTime
+                                      cue-time
                                       bridgeAddress
                                       hueUserName)
-                                     (updateLastStatus (lightList lightsToCue) lightingState cueTime)
-                                     (updateAllLights
+                                     (updateLastStatus (lightList lightsToCue) lightingState cue-time)
+                                     (update-all-lights
                                       1 16
                                       lights1To8
                                       lights9To16
@@ -716,7 +716,7 @@
 (define deleteButton (new button% [parent deletePanel]
                           [label "Delete"]
                           [callback (lambda (button event)
-                                      (deleteCue 
+                                      (delete-cue 
                                        mainList 
                                        (send cueChoice get-selection))
                                       (send cueChoice delete (send cueChoice get-selection))
@@ -732,13 +732,13 @@
 (define restoreButton (new button% [parent restorePanel]
                            [label "Restore"]
                            [callback (lambda (button event)
-                                       (restoreCue 
+                                       (restore-cue 
                                         mainList 
                                         (send cueChoice get-selection) 
-                                        17
+                                        range-of-lights
                                         bridgeAddress
                                         hueUserName)
-                                       (updateAllLights
+                                       (update-all-lights
                                         1
                                         16
                                         lights1To8
@@ -751,11 +751,11 @@
 
 ;; For Hue Window
 
-(define hueWindowMenuBar (new menu-bar% [parent hueWindow]))
+(define control-window-menu-bar (new menu-bar% [parent control-window]))
 
 ;; Show Menu
 
-(define hue-window-menu-show (new menu% [parent hueWindowMenuBar]
+(define hue-window-menu-show (new menu% [parent control-window-menu-bar]
                                   [label "Show"]))
 
 ;; Procedure to repopulate "Main Cue List" window.
@@ -810,7 +810,7 @@
 
 ;; Lamp Menu
 
-(define hue-window-menu-lamp (new menu% [parent hueWindowMenuBar]
+(define hue-window-menu-lamp (new menu% [parent control-window-menu-bar]
                                   [label "Lamp"]))
 (define hue-window-menu-lamp-patch (new menu-item% [parent hue-window-menu-lamp]
                                         [label "Patch"]
@@ -883,7 +883,7 @@
                               [horiz-margin 15]))
 
 ;; Bridge Menu
-(define hueWindowMenuBridge (new menu% [parent hueWindowMenuBar]
+(define hueWindowMenuBridge (new menu% [parent control-window-menu-bar]
                                  [label "Bridge"]))
 (define hueWindowMenuBridgeBridgeAddress (new menu-item% [parent hueWindowMenuBridge]
                                               [label "Set Bridge Address…"]
@@ -1127,12 +1127,12 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                                         (send updateFirmwareMessage set-label bridgeError))]))
 
 ; Windows Menu
-(define hueWindowMenuWindows (new menu% [parent hueWindowMenuBar]
+(define hueWindowMenuWindows (new menu% [parent control-window-menu-bar]
                                   [label "Windows"]))
 (define hueWindowMenuWindowsNum1 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send hueWindow get-label)]
+                                      [label (send control-window get-label)]
                                       [callback (lambda (menu event)
-                                                  (send hueWindow iconize #f))]
+                                                  (send control-window iconize #f))]
                                       [shortcut #\1]
                                       [shortcut-prefix '(cmd)]))
 (define hueWindowMenuWindowsNum2 (new menu-item% [parent hueWindowMenuWindows]
@@ -1159,12 +1159,12 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
 (send statusWindow show #t)
 (send allLights show #t)
 (send cueListWindow show #t)
-(send hueWindow show #t)
+(send control-window show #t)
 
 ;; If "Bridge Settings.shc" is newly created.
 
 (when (equal? setup-needed #f)
-  (define setup-dialog (new dialog% [parent hueWindow]
+  (define setup-dialog (new dialog% [parent control-window]
                             [label "Setup"]))
   (define setup-panel (new vertical-panel% [parent setup-dialog]
                            [alignment '(center top)]))
