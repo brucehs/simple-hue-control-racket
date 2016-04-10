@@ -99,7 +99,7 @@
 
 (define compare-light-state
   (lambda (hueObject lightNumber address user-name)
-    (make-hash
+    (make-immutable-hash
      (list
       (cond
         ((equal? (hash-ref (send hueObject get-state) 'on)
@@ -132,7 +132,7 @@
 
 (define create-hash-for-bridge
   (lambda (hue-object light-number address user-name)
-    (make-hash
+    (make-immutable-hash
      (append
       (hash->list (compare-light-state
                    hue-object
@@ -158,7 +158,7 @@
               get-json)
              (string->symbol (number->string light-number)))
             'state)])
-      (make-hash
+      (make-immutable-hash
        (list
         (cond
           ((equal? (hash-ref cue-light-state 'on)
@@ -205,7 +205,7 @@
                 get-json)
                (string->symbol (number->string light-number)))
               'state)])
-        (make-hash
+        (make-immutable-hash
          (append
           (hash->list (compare-light-state-in-cue
                        cue-list
@@ -223,7 +223,7 @@
 
 (define hashForJson
   (lambda (state time)
-    (make-hash
+    (make-immutable-hash
      (list
       (cond
         ((equal? (hash-ref state 'onChange) #t)
@@ -269,7 +269,7 @@
         ((and (equal? (length lights) 16)
               (<= time 10))
          (let ([state
-                (make-hash
+                (make-immutable-hash
                  (cons
                   (cons 'transitiontime time)
                   (hash->list (send (list-ref (send patch get-children) 0) get-state))))])
