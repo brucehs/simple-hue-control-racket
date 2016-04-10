@@ -23,7 +23,8 @@
 ;; Provide Cue Manipulation.
 (provide retrieveBridgeStatus
          restore-cue
-         delete-cue)
+         delete-cue
+         resort-cue-choice)
 
 ; Procedures for translating selection in the "Select Lights to Cue" panel
 ; to data to be sent to the bridge.
@@ -515,3 +516,18 @@
                   (split-at (send cueList get-children) position)])
       (send cueList set-children (append cueList1 (drop cueList2 1))))
     (collect-garbage)))
+
+; Procedures for resorting the cue list upon saving cues out of order.
+
+(define get-cue-strings
+    (lambda (cue-choice)
+      (for/list ([i (in-range (send cue-choice get-number))])
+        (send cue-choice get-string i))))
+
+(define resort-cue-choice
+    (lambda (cue-choice)
+      (let ([sorted-cue-choice
+             (sort (get-cue-strings cue-choice) string<?)])
+        (send cue-choice clear)
+        (for ([i (in-range (length sorted-cue-choice))])
+          (send cue-choice append (list-ref sorted-cue-choice i))))))
