@@ -23,7 +23,8 @@
 ;; Provide Cue Manipulation.
 (provide retrieveBridgeStatus
          restore-cue
-         delete-cue)
+         delete-cue
+         resort-cue-choice)
 
 ; Procedures for translating selection in the "Select Lights to Cue" panel
 ; to data to be sent to the bridge.
@@ -523,20 +524,12 @@
     (for/list ([i (in-range (send cue-choice get-number))])
       (send cue-choice get-string i))))
 
-(define resort-cue-choice
-  (lambda (cue-choice)
-    (let ([sorted-cue-choice
-           (sort (get-cue-strings cue-choice) string<?)])
-      (send cue-choice clear)
-      (for ([i (in-range (length sorted-cue-choice))])
-        (send cue-choice append (list-ref sorted-cue-choice i))))))
-
 (define extract-cue-number-from-string
   (lambda (cue-str)
     (let ([cue-number (list-ref (string-split cue-str) 0)])
       (string->number (list-ref (string-split cue-number ".") 0)))))
 
-(define get-lst-of-cue-numbers-from-choice
+(define get-list-of-cue-numbers-from-choice
     (lambda (cue-choice)
       (for/list ([i (in-range (send cue-choice get-number))])
         (extract-cue-number-from-string (send cue-choice get-string i)))))
@@ -550,3 +543,25 @@
       (cond
         ((= cue-str-number cue-obj-number) #t)
         (else #f)))))
+
+(define hash-cue-numbers-and-cue-strings
+  (lambda (cue-choice)
+    (for/hash ([i (in-range (length (get-cue-strings cue-choice)))])
+      (values
+       (list-ref (get-list-of-cue-numbers-from-choice cue-choice) i)
+       (list-ref (get-cue-strings cue-choice) i)))))
+
+(define resort-list-of-cue-strings
+  (lambda (cue-choice)
+    (let ([cues-hash (hash-cue-numbers-and-cue-strings cue-choice)]
+          [cues-key (sort (hash-keys (hash-cue-numbers-and-cue-strings cue-choice)) <)])
+      (for/list ([i (in-range (length cues-key))])
+        (hash-ref cues-hash (list-ref cues-key i))))))
+
+(define resort-cue-choice
+  (lambda (cue-choice)
+    (let ([list-of-cue-strings
+           (resort-list-of-cue-strings cue-choice)])
+      (send cue-choice clear)
+      (for ([i (in-range (length list-of-cue-strings))])
+        (send cue-choice append (list-ref list-of-cue-strings i))))))
