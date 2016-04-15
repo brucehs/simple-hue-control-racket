@@ -1,5 +1,7 @@
 #lang racket
 
+(require gregor)
+
 ;; Provide settings files.
 (provide supportDirectory
          bridgeSettingsFile)
@@ -14,6 +16,10 @@
 ;; Provide patch procedures.
 (provide set-patch!
          set-patch-to-default!)
+
+;; Provide logging procedures
+
+(provide log-time)
 
 ;; Bridge Settings are currently stored in a hash in the "Bridge Settings.shc"
 ;; file within the Application Support directory. Ideally, this will eventually
@@ -100,3 +106,10 @@
        (list-ref (send patch get-children) i)
        set-bulb (+ i 1)))
     (send panel refresh)))
+
+;; Procedure for writing current date/time for logging.
+;; Depends on the gregor package.
+
+(define log-time
+    (lambda ()
+      (~t (now) "y-MM-d HH:mm:ss")))
