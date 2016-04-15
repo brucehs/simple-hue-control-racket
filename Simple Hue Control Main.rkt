@@ -357,6 +357,7 @@
                                        (send save-cue-number-field set-value
                                              (number->string (+ new-cue-number 1))))
                                      (resort-cue-choice cueChoice)
+                                     (resort-cue-list cueChoice mainList)
                                      (save-show
                                       mainPatch
                                       mainList

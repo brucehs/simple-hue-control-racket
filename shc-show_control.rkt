@@ -2,7 +2,8 @@
 
 (require net/http-client
          net/uri-codec
-         json)
+         json
+         "shc-classes.rkt")
 
 ;; Provide Main Light Adjustments.
 (provide get-lights
@@ -24,7 +25,8 @@
 (provide retrieveBridgeStatus
          restore-cue
          delete-cue
-         resort-cue-choice)
+         resort-cue-choice
+         resort-cue-list)
 
 ; Procedures for translating selection in the "Select Lights to Cue" panel
 ; to data to be sent to the bridge.
@@ -534,15 +536,8 @@
       (for/list ([i (in-range (send cue-choice get-number))])
         (extract-cue-number-from-string (send cue-choice get-string i)))))
 
-(define compare-cue-numbers
-  (lambda (cue-str cue-obj)
-    (let ([cue-str-number
-           (extract-cue-number-from-string cue-str)]
-          [cue-obj-number
-           (send cue-obj get-number)])
-      (cond
-        ((= cue-str-number cue-obj-number) #t)
-        (else #f)))))
+; Creates a hash with the keys being the cue numbers and the values
+; being the cue-choice strings.
 
 (define hash-cue-numbers-and-cue-strings
   (lambda (cue-choice)
@@ -551,12 +546,18 @@
        (list-ref (get-list-of-cue-numbers-from-choice cue-choice) i)
        (list-ref (get-cue-strings cue-choice) i)))))
 
+; Creates a list with the cue strings in proper numerical order.
+
 (define resort-list-of-cue-strings
   (lambda (cue-choice)
-    (let ([cues-hash (hash-cue-numbers-and-cue-strings cue-choice)]
-          [cues-key (sort (hash-keys (hash-cue-numbers-and-cue-strings cue-choice)) <)])
+    (let ([cues-hash
+           (hash-cue-numbers-and-cue-strings cue-choice)]
+          [cues-key
+           (sort (hash-keys (hash-cue-numbers-and-cue-strings cue-choice)) <)])
       (for/list ([i (in-range (length cues-key))])
         (hash-ref cues-hash (list-ref cues-key i))))))
+
+; Actually resorts the cue-choice choice% popup menu.
 
 (define resort-cue-choice
   (lambda (cue-choice)
@@ -565,3 +566,59 @@
       (send cue-choice clear)
       (for ([i (in-range (length list-of-cue-strings))])
         (send cue-choice append (list-ref list-of-cue-strings i))))))
+
+; Procedures for resorting a cue-list% object
+
+ (define compare-cue-number
+    (lambda (cue-choice-number cue-obj)
+      (let ([cue-obj-number
+           (send cue-obj get-number)])
+         (cond
+        ((= cue-choice-number cue-obj-number) #t)
+        (else #f)))))
+
+(define return-cue-object
+  (lambda (lst)
+    (cond
+      ((object? (car lst))
+       (car lst))
+      ((null? (cdr lst))
+       (error "no object"))
+      (else (return-cue-object (cdr lst))))))
+
+(define get-cue-object-for-hash
+    (lambda (cue-choice index cue-list)
+      (let ([list-of-cue-numbers
+             (get-list-of-cue-numbers-from-choice cue-choice)])
+        (return-cue-object
+         (for/list ([i (in-range (length list-of-cue-numbers))])
+           (cond
+             ((compare-cue-number
+               (list-ref list-of-cue-numbers index)
+               (list-ref (send cue-list get-children) i))
+              (list-ref (send cue-list get-children) i))
+             (else #f)))))))
+
+(define hash-cue-numbers-and-cue-objects
+  (lambda (cue-choice cue-list)
+    (let ([list-of-cue-numbers
+           (get-list-of-cue-numbers-from-choice cue-choice)])
+      (for/hash ([i (in-range (length list-of-cue-numbers))])
+        (values
+         (list-ref list-of-cue-numbers i)
+         (get-cue-object-for-hash cue-choice i cue-list))))))
+
+(define resort-list-of-cue-objects
+  (lambda (cue-choice cue-list)
+    (let ([cues-hash
+           (hash-cue-numbers-and-cue-objects cue-choice cue-list)]
+          [cues-key
+           (sort (hash-keys (hash-cue-numbers-and-cue-objects cue-choice cue-list)) <)])
+      (for/list ([i (in-range (length cues-key))])
+        (hash-ref cues-hash (list-ref cues-key i))))))
+
+(define resort-cue-list
+  (lambda (cue-choice cue-list)
+    (let ([new-cue-order
+           (resort-list-of-cue-objects cue-choice cue-list)])
+      (send cue-list set-children new-cue-order))))
