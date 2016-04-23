@@ -31,7 +31,7 @@
       (new menu-item%
            [parent edit-menu]
            [label "Reset Patch 1-to-1"]
-           [callback (lambda (menu event) #t)]))))
+           [callback (lambda (menu event) #t)])))) ; Callback is a placeholder.
 
 ; Create the Patch Dialog
 
