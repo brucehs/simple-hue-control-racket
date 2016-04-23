@@ -4,9 +4,10 @@
          net/uri-codec
          json
          "shc-classes.rkt"
+         "shc-gui.rkt"
+         "shc-save_load.rkt"
          "shc-settings.rkt"
-         "shc-show_control.rkt"
-         "shc-save_load.rkt")
+         "shc-show_control.rkt")
 
 (compile-allow-set!-undefined #t)
 
@@ -834,7 +835,7 @@
 
 (define lamp-patch-dialog (new dialog% [label "Patch Lamps"]
                                [min-width 300]
-                               [min-height 800]))
+                               [min-height 600]))
 
 (define assigned-light-panel (new vertical-panel% [parent lamp-patch-dialog]
                                   [alignment '(left top)]
