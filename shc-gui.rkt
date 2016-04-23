@@ -7,6 +7,9 @@
 (provide populate-patch
          create-patch-set-button)
 
+(provide lamp-patch-dialog
+         assigned-light-panel)
+
 ; Create new shc-frame% class using framework. Add Patch & Reset Patch
 ; menu-items to Edit Menu.
 
