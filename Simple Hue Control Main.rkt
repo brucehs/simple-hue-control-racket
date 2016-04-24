@@ -146,11 +146,14 @@
 
 ; Now it is time to create the main interaction window.
 
-(define control-window (new frame% [label "Simple Hue Control"]))
+(define control-window (new shc-frame% [label "Simple Hue Control"]))
+
+(define control-window-root-area
+  (send control-window get-area-container))
 
 ; Next we create the panel to select the lights to control.
 
-(define lights-select (new vertical-panel% [parent control-window]
+(define lights-select (new vertical-panel% [parent control-window-root-area]
                           [style '(border)]))
 
 (define lights-select-title (new horizontal-panel% [parent lights-select]
@@ -215,7 +218,7 @@
                                                  (send (list-ref (send lights-select-panel-bottom get-children) i) set-value #t)))]))
 
 ; Next is the panel for setting the attributes.
-(define lightsAttributes (new vertical-panel% [parent control-window]
+(define lightsAttributes (new vertical-panel% [parent control-window-root-area]
                               [style '(border)]))
 (define lightsOn (new horizontal-panel% [parent lightsAttributes]))
 (define lightsChange (new radio-box% [parent lightsOn]
@@ -275,7 +278,7 @@
 
 (define cue-time 1)
 
-(define cue-time-panel (new horizontal-panel% [parent control-window]
+(define cue-time-panel (new horizontal-panel% [parent control-window-root-area]
                           [style '(border)]))
 
 (define cue-time-field (new text-field% [parent cue-time-panel]
@@ -295,7 +298,7 @@
 ; The Save Cue button saves the current lighting state. NOT the one about
 ; to be sent.
 
-(define cue-set-save-panel (new horizontal-panel% [parent control-window]
+(define cue-set-save-panel (new horizontal-panel% [parent control-window-root-area]
                                [style '(border)]
                                [alignment '(center center)]))
 
@@ -754,12 +757,12 @@
 
 ;; For Hue Window
 
-(define control-window-menu-bar (new menu-bar% [parent control-window]))
+;(define control-window-menu-bar (new menu-bar% [parent control-window]))
 
 ;; Show Menu
 
-(define hue-window-menu-show (new menu% [parent control-window-menu-bar]
-                                  [label "Show"]))
+(define hue-window-menu-show
+  (send (list-ref (send (send control-window get-menu-bar) get-items) 2) get-label))
 
 ;; Procedure to repopulate "Main Cue List" window.
 ;; Needs to be in GUI file, as cueChoice does not register as an argument.
@@ -813,8 +816,8 @@
 
 ;; Lamp Menu
 
-(define hue-window-menu-lamp (new menu% [parent control-window-menu-bar]
-                                  [label "Lamp"]))
+(define hue-window-menu-lamp
+  (send (list-ref (send (send control-window get-menu-bar) get-items) 2) get-label))
 (define hue-window-menu-lamp-patch (new menu-item% [parent hue-window-menu-lamp]
                                         [label "Patch"]
                                         [callback (lambda (menu event)
@@ -886,8 +889,8 @@
 ;                              [horiz-margin 15]))
 
 ;; Bridge Menu
-(define hueWindowMenuBridge (new menu% [parent control-window-menu-bar]
-                                 [label "Bridge"]))
+(define hueWindowMenuBridge
+  (send (list-ref (send (send control-window get-menu-bar) get-items) 2) get-label))
 (define hueWindowMenuBridgeBridgeAddress (new menu-item% [parent hueWindowMenuBridge]
                                               [label "Set Bridge Address…"]
                                               [callback (lambda (menu event)
