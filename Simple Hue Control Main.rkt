@@ -762,7 +762,7 @@
 ;; Show Menu
 
 (define hue-window-menu-show
-  (send (list-ref (send (send control-window get-menu-bar) get-items) 2) get-label))
+  (list-ref (send (send control-window get-menu-bar) get-items) 2))
 
 ;; Procedure to repopulate "Main Cue List" window.
 ;; Needs to be in GUI file, as cueChoice does not register as an argument.
@@ -817,7 +817,8 @@
 ;; Lamp Menu
 
 (define hue-window-menu-lamp
-  (send (list-ref (send (send control-window get-menu-bar) get-items) 2) get-label))
+  (list-ref (send (send control-window get-menu-bar) get-items) 2))
+
 (define hue-window-menu-lamp-patch (new menu-item% [parent hue-window-menu-lamp]
                                         [label "Patch"]
                                         [callback (lambda (menu event)
@@ -890,7 +891,8 @@
 
 ;; Bridge Menu
 (define hueWindowMenuBridge
-  (send (list-ref (send (send control-window get-menu-bar) get-items) 2) get-label))
+  (list-ref (send (send control-window get-menu-bar) get-items) 2))
+
 (define hueWindowMenuBridgeBridgeAddress (new menu-item% [parent hueWindowMenuBridge]
                                               [label "Set Bridge Address…"]
                                               [callback (lambda (menu event)
@@ -1133,32 +1135,32 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                                         (send updateFirmwareMessage set-label bridgeError))]))
 
 ; Windows Menu
-(define hueWindowMenuWindows (new menu% [parent control-window-menu-bar]
-                                  [label "Windows"]))
-(define hueWindowMenuWindowsNum1 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send control-window get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send control-window iconize #f))]
-                                      [shortcut #\1]
-                                      [shortcut-prefix '(cmd)]))
-(define hueWindowMenuWindowsNum2 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send statusWindow get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send statusWindow iconize #f))]
-                                      [shortcut #\2]
-                                      [shortcut-prefix '(cmd)]))
-(define hueWindowMenuWindowsNum3 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send allLights get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send allLights iconize #f))]
-                                      [shortcut #\3]
-                                      [shortcut-prefix '(cmd)]))
-(define hueWindowMenuWindowsNum4 (new menu-item% [parent hueWindowMenuWindows]
-                                      [label (send cueListWindow get-label)]
-                                      [callback (lambda (menu event)
-                                                  (send cueListWindow iconize #f))]
-                                      [shortcut #\4]
-                                      [shortcut-prefix '(cmd)]))
+;(define hueWindowMenuWindows (new menu% [parent control-window-menu-bar]
+;                                  [label "Windows"]))
+;(define hueWindowMenuWindowsNum1 (new menu-item% [parent hueWindowMenuWindows]
+;                                      [label (send control-window get-label)]
+;                                      [callback (lambda (menu event)
+;                                                  (send control-window iconize #f))]
+;                                      [shortcut #\1]
+;                                      [shortcut-prefix '(cmd)]))
+;(define hueWindowMenuWindowsNum2 (new menu-item% [parent hueWindowMenuWindows]
+;                                      [label (send statusWindow get-label)]
+;                                      [callback (lambda (menu event)
+;                                                  (send statusWindow iconize #f))]
+;                                      [shortcut #\2]
+;                                      [shortcut-prefix '(cmd)]))
+;(define hueWindowMenuWindowsNum3 (new menu-item% [parent hueWindowMenuWindows]
+;                                      [label (send allLights get-label)]
+;                                      [callback (lambda (menu event)
+;                                                  (send allLights iconize #f))]
+;                                      [shortcut #\3]
+;                                      [shortcut-prefix '(cmd)]))
+;(define hueWindowMenuWindowsNum4 (new menu-item% [parent hueWindowMenuWindows]
+;                                      [label (send cueListWindow get-label)]
+;                                      [callback (lambda (menu event)
+;                                                  (send cueListWindow iconize #f))]
+;                                      [shortcut #\4]
+;                                      [shortcut-prefix '(cmd)]))
 
 ; Show the Windows
 
