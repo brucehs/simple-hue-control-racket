@@ -15,10 +15,10 @@
 ;; Create Bridge Address and User Name files if they do not exist. Otherwise,
 ;; open the files.
 
-(supportDirectoryExists?)
+(support-directory-exists?)
 
 (define setup-needed
-  (bridgeSettingsFileExists?))
+  (bridge-settings-file-exists?))
 
 
 ;; Bridge Communication Variables. Communication will not work until 
@@ -27,11 +27,11 @@
 ;; Need to set up error handling if the user tries to use the application
 ;; before setting these.
 
-(define bridgeAddress (hash-ref (file->value bridgeSettingsFile) 'bridge-address))
-(define userDeviceName (hash-ref (file->value bridgeSettingsFile) 'user-device))
-(define hueUserName (hash-ref (file->value bridgeSettingsFile) 'hue-user-name))
-(define deviceType (hash-ref (file->value bridgeSettingsFile) 'device-type))
-(define appName (hash-ref (file->value bridgeSettingsFile) 'app-name))
+(define bridge-address (hash-ref (file->value bridge-settings-file) 'bridge-address))
+(define user-device-name (hash-ref (file->value bridge-settings-file) 'user-device))
+(define hue-user-name (hash-ref (file->value bridge-settings-file) 'hue-user-name))
+(define device-type (hash-ref (file->value bridge-settings-file) 'device-type))
+(define app-name (hash-ref (file->value bridge-settings-file) 'app-name))
 
 ;; Open output and input ports for saving single show file.
 
@@ -46,11 +46,11 @@
 ;; Create a main Cue List. Temporary. Eventually there will be an option for
 ;; multiple cue lists.
 
-(define mainList (new cue-list% [label "Main List"]))
+(define primary-cue-list (new cue-list% [label "Main List"]))
 
 ;; Create a patch object.
 
-(define mainPatch (new patch% [label "Main Patch"]))
+(define primary-patch (new patch% [label "Main Patch"]))
 
 ;; Number of lights.
 
@@ -64,7 +64,7 @@
 (for ([i (in-range 1 range-of-lights)])
   (new light%
        [label (string-append "Hue-" (number->string i))]
-       [parent mainPatch]
+       [parent primary-patch]
        [bulb i]
        [group 0]))
 
@@ -265,7 +265,7 @@
                                                 (let ([light-objects (lightList lightsToCue)])
                                                   (for ([i (in-range (length light-objects))])
                                                     (send (list-ref
-                                                           (send mainPatch get-children)
+                                                           (send primary-patch get-children)
                                                            (- (list-ref light-objects i) 1))
                                                           set-state (make-hash
                                                                      (append
@@ -345,13 +345,13 @@
                                        (new cue+c%
                                             [number new-cue-number]
                                             [label new-cue-name]
-                                            [parent mainList]
-                                            [json-value (retrieveBridgeStatus bridgeAddress hueUserName)]
+                                            [parent primary-cue-list]
+                                            [json-value (retrieveBridgeStatus bridge-address hue-user-name)]
                                             [time (* new-cue-time 10)])
-                                       (send cueChoice clear)
-                                       (let ([cues (send mainList get-children)])
+                                       (send cue-list-display clear)
+                                       (let ([cues (send primary-cue-list get-children)])
                                          (for ([i (in-range (length cues))])
-                                           (send cueChoice append (string-append (number->string (send (list-ref cues i) get-number))
+                                           (send cue-list-display append (string-append (number->string (send (list-ref cues i) get-number))
                                                                                  ". "
                                                                                  (send (list-ref cues i) get-label)
                                                                                  " - "
@@ -360,16 +360,16 @@
                                        (send save-cue-name-field set-value "")
                                        (send save-cue-number-field set-value
                                              (number->string (+ new-cue-number 1))))
-                                     (resort-cue-choice cueChoice)
-                                     (resort-cue-list cueChoice mainList)
+                                     (resort-cue-choice cue-list-display)
+                                     (resort-cue-list cue-list-display primary-cue-list)
                                      (save-show
-                                      mainPatch
-                                      mainList
+                                      primary-patch
+                                      primary-cue-list
                                       saved-show-write-port)
                                      (send save-cue-dialog show #f))]
                          [style '(border)]))
 
-; Create Go Button
+; Create Set Button
 
 (define cue-set-panel (new horizontal-panel% [parent cue-set-save-panel]
                         [alignment '(right center)]))
@@ -380,17 +380,17 @@
                          [callback (lambda (button event)
                                      (set-lights!
                                       (lightList lightsToCue)
-                                      mainPatch
+                                      primary-patch
                                       cue-time
-                                      bridgeAddress
-                                      hueUserName)
+                                      bridge-address
+                                      hue-user-name)
                                      (updateLastStatus (lightList lightsToCue) lightingState cue-time)
                                      (update-all-lights
                                       1 16
                                       lights1To8
                                       lights9To16
-                                      bridgeAddress
-                                      hueUserName))]
+                                      bridge-address
+                                      hue-user-name))]
                          [style '(border)]))
 
 ; Now we need a Status Window.
@@ -708,7 +708,7 @@
                           [alignment '(left center)]
                           [min-width 250]))
 
-(define cueChoice (new choice% [parent cueListPanel]
+(define cue-list-display (new choice% [parent cueListPanel]
                        [label "Cues:"]
                        [min-width 230]
                        [choices '()]))
@@ -723,13 +723,13 @@
                           [label "Delete"]
                           [callback (lambda (button event)
                                       (delete-cue 
-                                       mainList 
-                                       (send cueChoice get-selection))
-                                      (send cueChoice delete (send cueChoice get-selection))
+                                       primary-cue-list 
+                                       (send cue-list-display get-selection))
+                                      (send cue-list-display delete (send cue-list-display get-selection))
                                       (clear-show saved-show-file)
                                       (save-show
-                                       mainPatch
-                                       mainList
+                                       primary-patch
+                                       primary-cue-list
                                        saved-show-write-port))]))
 
 (define restorePanel (new horizontal-panel% [parent restoreAndDeletePanel]
@@ -739,18 +739,18 @@
                            [label "Restore"]
                            [callback (lambda (button event)
                                        (restore-cue 
-                                        mainList 
-                                        (send cueChoice get-selection) 
+                                        primary-cue-list 
+                                        (send cue-list-display get-selection) 
                                         range-of-lights
-                                        bridgeAddress
-                                        hueUserName)
+                                        bridge-address
+                                        hue-user-name)
                                        (update-all-lights
                                         1
                                         16
                                         lights1To8
                                         lights9To16
-                                        bridgeAddress
-                                        hueUserName))]
+                                        bridge-address
+                                        hue-user-name))]
                            [style '(border)]))
 
 ;; Menu Bars
@@ -765,14 +765,14 @@
   (list-ref (send (send control-window get-menu-bar) get-items) 2))
 
 ;; Procedure to repopulate "Main Cue List" window.
-;; Needs to be in GUI file, as cueChoice does not register as an argument.
+;; Needs to be in GUI file, as cue-list-display does not register as an argument.
 
 (define append-cues
   (lambda (cues)
     (cond
       ((empty? cues) '(done))
       (else
-       (send cueChoice append
+       (send cue-list-display append
              (string-append (number->string (send (car cues) get-number))
                             ". "
                             (send (car cues) get-label)
@@ -787,10 +787,10 @@
                                          [callback (lambda (menu event)
                                                      (prep-load-show saved-show-read-port)
                                                      (load-show
-                                                      mainPatch
-                                                      mainList
+                                                      primary-patch
+                                                      primary-cue-list
                                                       saved-show-read-port)
-                                                     (let ([cues (send mainList get-children)])
+                                                     (let ([cues (send primary-cue-list get-children)])
                                                        (append-cues cues))
                                                      (for ([i (in-range 1 range-of-lights)])
                                                        (send
@@ -801,7 +801,7 @@
                                                         (number->string
                                                          (send
                                                           (list-ref
-                                                           (send mainPatch get-children)
+                                                           (send primary-patch get-children)
                                                            (- i 1))
                                                           get-bulb))))
                                                      (send assigned-light-panel refresh))]))
@@ -828,14 +828,23 @@
                                               [label "Rest Patch 1-to-1"]
                                               [callback (lambda (menu event)
                                                           (set-patch-to-default!
-                                                           mainPatch
+                                                           primary-patch
                                                            assigned-light-panel)
                                                           (save-show
-                                                           mainPatch
-                                                           mainList
+                                                           primary-patch
+                                                           primary-cue-list
                                                            saved-show-write-port))]))
 
 ;; Patch Dialog
+
+(populate-patch range-of-lights primary-patch)
+
+(create-patch-set-button
+ primary-patch
+ set-patch!
+ primary-cue-list
+ save-show
+ saved-show-write-port)
 
 ;(define lamp-patch-dialog (new dialog% [label "Patch Lamps"]
 ;                               [min-width 300]
@@ -858,7 +867,7 @@
 ;                 (string-append "  Channel " (number->string i) "        ""Bulb:")))]
 ;       [init-value (number->string
 ;                    (send
-;                     (list-ref (send mainPatch get-children) (- i 1))
+;                     (list-ref (send primary-patch get-children) (- i 1))
 ;                     get-bulb))]
 ;       [min-width 40]
 ;       [stretchable-width 40]
@@ -879,11 +888,11 @@
 ;                              [label "Set"]
 ;                              [callback (lambda (button event)
 ;                                          (set-patch!
-;                                           mainPatch
+;                                           primary-patch
 ;                                           assigned-light-panel)
 ;                                          (save-show
-;                                           mainPatch
-;                                           mainList
+;                                           primary-patch
+;                                           primary-cue-list
 ;                                           saved-show-write-port)
 ;                                          (send lamp-patch-dialog show #f))]
 ;                              [style '(border)]
@@ -916,7 +925,7 @@
                                 [min-width 300]))
 (define bridgeAddressField (new text-field% [parent bridgeAddressPanel]
                                 [label "Bridge Address:"]
-                                [init-value bridgeAddress]
+                                [init-value bridge-address]
                                 [horiz-margin 20]))
 (define setBridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
                                    [alignment '(center center)]
@@ -929,10 +938,10 @@
 (define saveBridgeAddress (new button% [parent setBridgeAddressPanel]
                                [label "Save"]
                                [callback (lambda (button event)
-                                           (set! bridgeAddress (send bridgeAddressField get-value))
-                                           (let ([bridgeSettings (make-hash (hash->list (file->value bridgeSettingsFile)))])
-                                             (hash-set! bridgeSettings 'bridgeAddress (send bridgeAddressField get-value))
-                                             (with-output-to-file bridgeSettingsFile
+                                           (set! bridge-address (send bridgeAddressField get-value))
+                                           (let ([bridgeSettings (make-hash (hash->list (file->value bridge-settings-file)))])
+                                             (hash-set! bridgeSettings 'bridge-address (send bridgeAddressField get-value))
+                                             (with-output-to-file bridge-settings-file
                                                (lambda () (write bridgeSettings))
                                                #:mode 'text
                                                #:exists 'replace)
@@ -947,7 +956,7 @@
   (lambda (device)
     (let-values ([(httpStatus httpHeader jsonResponse)
                   (http-sendrecv
-                   bridgeAddress "/api"
+                   bridge-address "/api"
                    #:method 'POST
                    #:data
                    (jsexpr->string
@@ -960,7 +969,7 @@
           ((equal? (hash-keys (car bridgeResponse)) '(error))
            (set! bridgeError (string-append "Error: " (hash-ref (hash-ref (car bridgeResponse) 'error) 'description))))
           ((equal? (hash-keys (car bridgeResponse)) '(success))
-           (set! hueUserName (hash-ref (hash-ref (car bridgeResponse) 'success) 'username))
+           (set! hue-user-name (hash-ref (hash-ref (car bridgeResponse) 'success) 'username))
            (set! bridgeError "")))))))
 
 
@@ -981,7 +990,7 @@
                            [stretchable-width 200]))
 (define userDeviceNameField (new text-field% [parent userNamePanel]
                                  [label "Device Name:"]
-                                 [init-value userDeviceName]
+                                 [init-value user-device-name]
                                  [horiz-margin 50]
                                  [min-width 200]
                                  [stretchable-width 200]))
@@ -998,23 +1007,23 @@
                                       (let ([bridgeSettings
                                              (make-hash
                                               (hash->list
-                                               (file->value bridgeSettingsFile)))])
-                                        (set! userDeviceName 
+                                               (file->value bridge-settings-file)))])
+                                        (set! user-device-name 
                                               (send userDeviceNameField get-value))
                                         (hash-set! bridgeSettings
                                                    'userDevice
-                                                   userDeviceName)
-                                        (set! deviceType (string-append appName (string-append "#" userDeviceName)))
+                                                   user-device-name)
+                                        (set! device-type (string-append app-name (string-append "#" user-device-name)))
                                         (hash-set! bridgeSettings
-                                                   'deviceType
-                                                   deviceType)
-                                        (setUserName! deviceType)
+                                                   'device-type
+                                                   device-type)
+                                        (setUserName! device-type)
                                         (cond
                                           ((equal? bridgeError "")
                                            (hash-set! bridgeSettings
-                                                      'hueUserName
-                                                      hueUserName)
-                                           (with-output-to-file bridgeSettingsFile
+                                                      'hue-user-name
+                                                      hue-user-name)
+                                           (with-output-to-file bridge-settings-file
                                              (lambda () (write bridgeSettings))
                                              #:mode 'text
                                              #:exists 'replace)
@@ -1036,8 +1045,8 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
   (lambda ()
     (let-values ([(httpStatus httpHeader jsonResponse)
                   (http-sendrecv
-                   bridgeAddress (string-append 
-                                  (string-append "/api/" hueUserName) 
+                   bridge-address (string-append 
+                                  (string-append "/api/" hue-user-name) 
                                   "/config/") 
                    #:method 'GET
                    #:headers
@@ -1058,8 +1067,8 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                  ; Set 'checkforupdate to #t.
                  (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
                                (http-sendrecv
-                                bridgeAddress (string-append 
-                                               (string-append "/api/" hueUserName) 
+                                bridge-address (string-append 
+                                               (string-append "/api/" hue-user-name) 
                                                "/config/") 
                                 #:method 'PUT
                                 #:data
@@ -1084,8 +1093,8 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                  ; Need to initiate Update.
                  (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
                                (http-sendrecv
-                                bridgeAddress (string-append 
-                                               (string-append "/api/" hueUserName) 
+                                bridge-address (string-append 
+                                               (string-append "/api/" hue-user-name) 
                                                "/config/") 
                                 #:method 'PUT
                                 #:data
