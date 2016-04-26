@@ -32,20 +32,17 @@
            [parent edit-menu]
            [label "Reset Patch 1-to-1"]
            [callback (lambda (menu event) #t)])) ; Callback is a placeholder.
-    (define/public (show-menu) (new menu%
-                        [parent (send this get-menu-bar)]
-                        [label "Show"]))
-    (define/public (lamp-menu) (new menu%
-                                    [parent (send this get-menu-bar)]
-                                    [label "Lamp"]))
-    (define/public (bridge-menu) (new menu%
-                                      [parent (send this get-menu-bar)]
-                                      [label "Bridge"]))
     (begin
-     (send this show-menu)
-     (send this lamp-menu)
-     (send this bridge-menu)
-     (frame:reorder-menus this))))
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Show"])
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Lamp"])
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Bridge"])
+      (frame:reorder-menus this))))
                                       
 
 ; Create the Patch Dialog
@@ -117,3 +114,7 @@
                         [height 200]))
 
 (send test-frame show #t)
+
+(define test-menu-bar (send test-frame get-menu-bar))
+
+(define patch-item (list-ref (send (list-ref (send test-menu-bar get-items) 1) get-items) 9))
