@@ -1,6 +1,7 @@
 #lang racket/gui
 
-(require net/http-client
+(require framework
+         net/http-client
          net/uri-codec
          json
          "shc-classes.rkt"
@@ -143,6 +144,40 @@
     (updateHue state)
     (updateSat state)
     (updateLastTransitiontime time)))
+
+(define shc-frame%
+  (class ext-frame%
+    (super-new)
+    (define/override (edit-menu:create-clear?) #f)
+    (define/override (edit-menu:between-select-all-and-find edit-menu)
+      (new separator-menu-item% [parent edit-menu])
+      (new menu-item%
+           [parent edit-menu]
+           [label "Patch"]
+           [callback (lambda (menu event)
+                       (send lamp-patch-dialog show #t))])
+      (new menu-item%
+           [parent edit-menu]
+           [label "Reset Patch 1-to-1"]
+           [callback (lambda (menu event)
+                       (set-patch-to-default!
+                        primary-patch
+                        assigned-light-panel)
+                       (save-show
+                        primary-patch
+                        primary-cue-list
+                        saved-show-write-port))])
+    (begin
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Show"])
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Lamp"])
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Bridge"])
+      (frame:reorder-menus this)))))
 
 ; Now it is time to create the main interaction window.
 
@@ -825,7 +860,7 @@
                                                     (send lamp-patch-dialog show #t))]))
 (define hue-window-menu-lamp-reset-patch (new menu-item%
                                               [parent hue-window-menu-lamp]
-                                              [label "Rest Patch 1-to-1"]
+                                              [label "Reset Patch 1-to-1"]
                                               [callback (lambda (menu event)
                                                           (set-patch-to-default!
                                                            primary-patch

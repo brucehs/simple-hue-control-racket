@@ -2,7 +2,7 @@
 
 (require framework)
 
-(provide shc-frame%)
+(provide ext-frame%)
 
 (provide populate-patch
          create-patch-set-button)
@@ -16,33 +16,6 @@
 (define ext-frame%
     (frame:standard-menus-mixin
     (frame:status-line-mixin frame:basic%)))
-
-(define shc-frame%
-  (class ext-frame%
-    (super-new)
-    (define/override (edit-menu:create-clear?) #f)
-    (define/override (edit-menu:between-select-all-and-find edit-menu)
-      (new separator-menu-item% [parent edit-menu])
-      (new menu-item%
-           [parent edit-menu]
-           [label "Patch"]
-           [callback (lambda (menu event)
-                       (send lamp-patch-dialog show #t))])
-      (new menu-item%
-           [parent edit-menu]
-           [label "Reset Patch 1-to-1"]
-           [callback (lambda (menu event) #t)])) ; Callback is a placeholder.
-    (begin
-      (new menu%
-           [parent (send this get-menu-bar)]
-           [label "Show"])
-      (new menu%
-           [parent (send this get-menu-bar)]
-           [label "Lamp"])
-      (new menu%
-           [parent (send this get-menu-bar)]
-           [label "Bridge"])
-      (frame:reorder-menus this))))
                                       
 
 ; Create the Patch Dialog
@@ -108,13 +81,13 @@
 
 ;; Comment out. For testing only.
 
-(define test-frame (new shc-frame%
-                        [label "Testing"]
-                        [width 300]
-                        [height 200]))
-
-(send test-frame show #t)
-
-(define test-menu-bar (send test-frame get-menu-bar))
-
-(define patch-item (list-ref (send (list-ref (send test-menu-bar get-items) 1) get-items) 9))
+;(define test-frame (new shc-frame%
+;                        [label "Testing"]
+;                        [width 300]
+;                        [height 200]))
+;
+;(send test-frame show #t)
+;
+;(define test-menu-bar (send test-frame get-menu-bar))
+;
+;(define patch-item (list-ref (send (list-ref (send test-menu-bar get-items) 1) get-items) 9))
