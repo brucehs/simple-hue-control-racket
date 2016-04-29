@@ -1,14 +1,22 @@
 #lang racket/gui
 
-(require framework)
+(require framework
+         "shc-classes.rkt"
+         "shc-save_load.rkt"
+         "shc-settings.rkt"
+         "shc-show_control.rkt")
 
-(provide ext-frame%)
+(provide shc-frame%)
 
 (provide populate-patch
          create-patch-set-button)
 
 (provide lamp-patch-dialog
-         assigned-light-panel)
+         assigned-light-panel
+         append-cues)
+
+(define saved-show-write-port
+  (open-output-file saved-show-file #:mode 'text #:exists 'can-update))
 
 ; Create new shc-frame% class using framework. Add Patch & Reset Patch
 ; menu-items to Edit Menu.
@@ -16,7 +24,51 @@
 (define ext-frame%
     (frame:standard-menus-mixin
     (frame:status-line-mixin frame:basic%)))
-                                      
+
+(define shc-frame%
+  (class ext-frame%
+    (super-new)
+    ; Standard File Menu items not needed until Saving arbitrary show files is implimented.
+    (define/override (file-menu:create-new?) #f)
+    (define/override (file-menu:create-open?) #f)
+    (define/override (file-menu:create-open-recent?) #f)
+    ; Add Reload and Clear Show Menu Items to File Menu.
+    (define/override (file-menu:between-save-as-and-print file-menu)
+      (new separator-menu-item% [parent file-menu])
+      (new menu-item%
+           [parent file-menu]
+           [label "Reload Previous Show"]
+           [callback (lambda (menu event) #t)]) ; Stand in callback function
+      (new menu-item%
+           [parent file-menu]
+           [label "Clear Previous Show"]
+           [callback (lambda (menu event)
+                       (clear-show saved-show-file))]))
+    (define/override (edit-menu:create-clear?) #f) ; Clear Function Not Needed
+    ; Add Patch Menu Items to Edit Menu
+    (define/override (edit-menu:between-select-all-and-find edit-menu)
+      (new separator-menu-item% [parent edit-menu])
+      (new menu-item%
+           [parent edit-menu]
+           [label "Patch"]
+           [callback (lambda (menu event)
+                       (send lamp-patch-dialog show #t))])
+      (new menu-item%
+           [parent edit-menu]
+           [label "Reset Patch 1-to-1"]
+           [callback (lambda (menu event)
+                       (set-patch-to-default!
+                        primary-patch
+                        assigned-light-panel)
+                       (save-show
+                        primary-patch
+                        primary-cue-list
+                        saved-show-write-port))])
+    (begin
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Bridge"]) ; Eventually this window will be cut and items will move to Preferences.
+      (frame:reorder-menus this)))))
 
 ; Create the Patch Dialog
 
@@ -78,6 +130,22 @@
                                           (send lamp-patch-dialog show #f))]
                               [style '(border)]
                               [horiz-margin 15])))
+
+; Function for reloading cues (?)
+
+(define append-cues
+  (lambda (cues choice-display)
+    (cond
+      ((empty? cues) '(done))
+      (else
+       (send choice-display append
+             (string-append (number->string (send (car cues) get-number))
+                            ". "
+                            (send (car cues) get-label)
+                            " - "
+                            (number->string (/ (send (car cues) get-time) 10))
+                            "s"))
+       (append-cues (cdr cues))))))
 
 ;; Comment out. For testing only.
 

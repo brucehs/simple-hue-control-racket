@@ -5,6 +5,9 @@
          patch%
          light%)
 
+(provide primary-cue-list
+         primary-patch)
+
 ; Cue List and Cue Classes
 ; Perhaps Scenes could be used for Cueing instead. They can have the
 ; transitiontime value attached. However, the state of the scene is not
@@ -161,6 +164,15 @@
         (<= group 16))
        #t)
       (else #f))))
+
+;; Create a main Cue List. Temporary. Eventually there will be an option for
+;; multiple cue lists.
+
+(define primary-cue-list (new cue-list% [label "Main List"]))
+
+;; Create a patch object.
+
+(define primary-patch (new patch% [label "Main Patch"]))
 
 ;; For Testing. Comment out when not in use.
 
