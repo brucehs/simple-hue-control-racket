@@ -763,19 +763,7 @@
 ;; Procedure to repopulate "Main Cue List" window.
 ;; Needs to be in GUI file, as cue-list-display does not register as an argument.
 
-(define append-cues
-  (lambda (cues)
-    (cond
-      ((empty? cues) '(done))
-      (else
-       (send cue-list-display append
-             (string-append (number->string (send (car cues) get-number))
-                            ". "
-                            (send (car cues) get-label)
-                            " - "
-                            (number->string (/ (send (car cues) get-time) 10))
-                            "s"))
-       (append-cues (cdr cues))))))
+
 
 (define hue-window-menu-show-reload (new menu-item%
                                          [parent hue-window-menu-show]
@@ -787,7 +775,7 @@
                                                       primary-cue-list
                                                       saved-show-read-port)
                                                      (let ([cues (send primary-cue-list get-children)])
-                                                       (append-cues cues))
+                                                       (append-cues cues cue-list-display))
                                                      (for ([i (in-range 1 range-of-lights)])
                                                        (send
                                                         (list-ref
@@ -804,32 +792,32 @@
 
 ;; Procedure to clear the saved show file.
 
-(define hue-window-menu-show-clear (new menu-item%
-                                        [parent hue-window-menu-show]
-                                        [label "Clear Previous Show"]
-                                        [callback (lambda (menu event)
-                                                    (clear-show saved-show-file))]))
+;(define hue-window-menu-show-clear (new menu-item%
+;                                        [parent hue-window-menu-show]
+;                                        [label "Clear Previous Show"]
+;                                        [callback (lambda (menu event)
+;                                                    (clear-show saved-show-file))]))
 
 ;; Lamp Menu
 
-(define hue-window-menu-lamp
-  (list-ref (send (send control-window get-menu-bar) get-items) 2))
-
-(define hue-window-menu-lamp-patch (new menu-item% [parent hue-window-menu-lamp]
-                                        [label "Patch"]
-                                        [callback (lambda (menu event)
-                                                    (send lamp-patch-dialog show #t))]))
-(define hue-window-menu-lamp-reset-patch (new menu-item%
-                                              [parent hue-window-menu-lamp]
-                                              [label "Reset Patch 1-to-1"]
-                                              [callback (lambda (menu event)
-                                                          (set-patch-to-default!
-                                                           primary-patch
-                                                           assigned-light-panel)
-                                                          (save-show
-                                                           primary-patch
-                                                           primary-cue-list
-                                                           saved-show-write-port))]))
+;(define hue-window-menu-lamp
+;  (list-ref (send (send control-window get-menu-bar) get-items) 2))
+;
+;(define hue-window-menu-lamp-patch (new menu-item% [parent hue-window-menu-lamp]
+;                                        [label "Patch"]
+;                                        [callback (lambda (menu event)
+;                                                    (send lamp-patch-dialog show #t))]))
+;(define hue-window-menu-lamp-reset-patch (new menu-item%
+;                                              [parent hue-window-menu-lamp]
+;                                              [label "Reset Patch 1-to-1"]
+;                                              [callback (lambda (menu event)
+;                                                          (set-patch-to-default!
+;                                                           primary-patch
+;                                                           assigned-light-panel)
+;                                                          (save-show
+;                                                           primary-patch
+;                                                           primary-cue-list
+;                                                           saved-show-write-port))]))
 
 ;; Patch Dialog
 
