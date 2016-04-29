@@ -1,8 +1,12 @@
 #lang racket/gui
 
-(require framework)
+(require framework
+         "shc-classes.rkt"
+         "shc-save_load.rkt"
+         "shc-settings.rkt"
+         "shc-show_control.rkt")
 
-(provide ext-frame%)
+(provide shc-frame%)
 
 (provide populate-patch
          create-patch-set-button)
@@ -10,13 +14,49 @@
 (provide lamp-patch-dialog
          assigned-light-panel)
 
+(define saved-show-write-port
+  (open-output-file saved-show-file #:mode 'text #:exists 'can-update))
+
 ; Create new shc-frame% class using framework. Add Patch & Reset Patch
 ; menu-items to Edit Menu.
 
 (define ext-frame%
     (frame:standard-menus-mixin
     (frame:status-line-mixin frame:basic%)))
-                                      
+
+(define shc-frame%
+  (class ext-frame%
+    (super-new)
+    (define/override (edit-menu:create-clear?) #f)
+    (define/override (edit-menu:between-select-all-and-find edit-menu)
+      (new separator-menu-item% [parent edit-menu])
+      (new menu-item%
+           [parent edit-menu]
+           [label "Patch"]
+           [callback (lambda (menu event)
+                       (send lamp-patch-dialog show #t))])
+      (new menu-item%
+           [parent edit-menu]
+           [label "Reset Patch 1-to-1"]
+           [callback (lambda (menu event)
+                       (set-patch-to-default!
+                        primary-patch
+                        assigned-light-panel)
+                       (save-show
+                        primary-patch
+                        primary-cue-list
+                        saved-show-write-port))])
+    (begin
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Show"])
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Lamp"])
+      (new menu%
+           [parent (send this get-menu-bar)]
+           [label "Bridge"])
+      (frame:reorder-menus this)))))
 
 ; Create the Patch Dialog
 
