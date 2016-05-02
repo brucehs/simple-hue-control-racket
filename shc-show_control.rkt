@@ -15,10 +15,10 @@
          set-lights!)
 
 ;; Provide Updating Light Status.
-(provide initialOnMessage
-         initialBriMessage
-         initialHueMessage
-         initialSatMessage
+(provide initial-on-message
+         initial-bri-message
+         initial-hue-message
+         initial-sat-message
          update-all-lights)
 
 ;; Provide Cue Manipulation.
@@ -326,10 +326,10 @@
 ; Procedure to update information about lighting state of every light.
 ; It pulls its data from the bridge.
 
-(define initialOnMessage "On?: ")
-(define initialBriMessage "Bri: ")
-(define initialHueMessage "Hue: ")
-(define initialSatMessage "Sat: ")
+(define initial-on-message "On?: ")
+(define initial-bri-message "Bri: ")
+(define initial-hue-message "Hue: ")
+(define initial-sat-message "Sat: ")
 
 (define update-all-lights
   (lambda (firstLight lastLight lightLineOne lightLineTwo address user-name)
@@ -356,7 +356,7 @@
                             get-children)
                            0) 
                  set-label 
-                 (string-append initialOnMessage "T")))
+                 (string-append initial-on-message "T")))
                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
                 (send 
                  (list-ref (send
@@ -364,14 +364,14 @@
                             get-children)
                            0) 
                  set-label 
-                 (string-append initialOnMessage "F"))))
+                 (string-append initial-on-message "F"))))
              (send 
               (list-ref (send
                          (list-ref (send lightLineOne get-children) (- i 1))
                          get-children)
                         1) 
               set-label 
-              (string-append initialBriMessage 
+              (string-append initial-bri-message 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'bri))))
              (send 
@@ -380,7 +380,7 @@
                          get-children)
                         2) 
               set-label 
-              (string-append initialHueMessage 
+              (string-append initial-hue-message 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'hue))))
              (send 
@@ -389,7 +389,7 @@
                          get-children)
                         3) 
               set-label 
-              (string-append initialSatMessage 
+              (string-append initial-sat-message 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'sat)))))
             ((and (>= i 9) (<= i 16))
@@ -401,7 +401,7 @@
                             get-children)
                            0) 
                  set-label 
-                 (string-append initialOnMessage "T")))
+                 (string-append initial-on-message "T")))
                ((eq? (hash-ref (hash-ref lightState 'state) 'on) #f)
                 (send 
                  (list-ref (send
@@ -409,14 +409,14 @@
                             get-children)
                            0) 
                  set-label 
-                 (string-append initialOnMessage "F"))))
+                 (string-append initial-on-message "F"))))
              (send 
               (list-ref (send
                          (list-ref (send lightLineTwo get-children) (- i 9))
                          get-children)
                         1) 
               set-label 
-              (string-append initialBriMessage 
+              (string-append initial-bri-message 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'bri))))
              (send 
@@ -425,7 +425,7 @@
                          get-children)
                         2) 
               set-label 
-              (string-append initialHueMessage 
+              (string-append initial-hue-message 
                              (number->string 
                               (hash-ref (hash-ref lightState 'state) 'hue))))
              (send 
@@ -434,7 +434,7 @@
                          get-children)
                         3) 
               set-label 
-              (string-append initialSatMessage 
+              (string-append initial-sat-message 
                              (number->string 
                               (hash-ref
                                (hash-ref lightState 'state)
