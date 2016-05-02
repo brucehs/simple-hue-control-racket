@@ -8,6 +8,9 @@
 
 (provide shc-frame%)
 
+(provide create-status-boxes
+         get-status-panels)
+
 (provide populate-patch
          create-patch-set-button)
 
@@ -131,6 +134,87 @@
                               [style '(border)]
                               [horiz-margin 15])))
 
+; Function to populate Light Status Window
+
+(define determine-rows-columns
+    (lambda (number-of-lights)
+      (let ([rows (+ (quotient number-of-lights 10) 1)])
+        (list rows (ceiling (/ number-of-lights rows))))))
+
+(define get-status-panels
+    (lambda (frame)
+      (send (list-ref
+             (send (list-ref (send frame get-children) 0) get-children)
+             0)
+            get-children)))
+;
+;(define get-label-list
+;    (lambda (panel-list row-index)
+;      (let ([test-row (list-ref panel-list row-index)])
+;        (for/list ([i (in-range (length (send test-row get-children)))])
+;            (send (list-ref (send test-row get-children) i) get-label)))))
+;
+;(define get-number-list
+;    (lambda (lst)
+;      (for/list ([i (in-range (length lst))])
+;            (find-number (regexp-match* #px"\\d{,2}" (list-ref lst i))))))
+;
+;(define find-number
+;  (lambda (lst)
+;    (cond
+;      ((null? lst) #f)
+;      ((not (string->number (car lst))) (find-number (cdr lst)))
+;      ((number? (string->number (car lst))) (string->number (car lst))))))
+;
+;(define delete-excessive-box?
+;    (lambda (number-of-lights lst)
+;      (cond
+;        ((null? lst) #f)
+;        ((<= (car lst) number-of-lights) (delete-excessive-box? number-of-lights (cdr lst)))
+;        ((> (car lst) number-of-lights) #t))))
+
+;(for/list ([i (in-range (length (get-status-panels test-frame)))])
+;            (get-number-list (get-label-list (get-status-panels test-frame) i)))
+
+(define populate-status-box
+  (lambda (parent-box)
+    (new message% [parent parent-box]
+         [label initial-on-message]
+         [auto-resize #t])
+    (new message% [parent parent-box]
+         [label initial-bri-message]
+         [auto-resize #t])
+    (new message% [parent parent-box]
+         [label initial-hue-message]
+         [auto-resize #t])
+    (new message% [parent parent-box]
+         [label initial-sat-message]
+         [auto-resize #t])))
+
+(define create-status-boxes
+  (lambda (frame number-of-lights)
+    (let ([container (send frame get-area-container)]
+          [rows (car (determine-rows-columns number-of-lights))]
+          [columns (cadr (determine-rows-columns number-of-lights))])
+      (for ([i (in-range rows)])
+           (let ([light-status-panel (new horizontal-panel%
+                                          [parent container]
+                                          [alignment '(left top)])])
+             (for ([j (in-range columns)])
+                  (let ([light-info
+                         (new group-box-panel%
+                              [parent light-status-panel]
+                              [label (string-append
+                                      "LX "
+                                      (number->string (+ (+ j 1) (* columns i))))]
+                              [alignment '(left top)])])
+                    (cond
+                      ((<= (+ (+ j 1) (* columns i)) number-of-lights)
+                       (populate-status-box light-info))
+                      ((> (+ (+ j 1) (* columns i)) number-of-lights)
+                       (send light-info show #f))))))))))
+
+
 ; Function for reloading cues (?)
 
 (define append-cues
@@ -149,11 +233,11 @@
 
 ;; Comment out. For testing only.
 
-;(define test-frame (new shc-frame%
-;                        [label "Testing"]
-;                        [width 300]
-;                        [height 200]))
-;
+(define test-frame (new shc-frame%
+                        [label "Testing"]
+                        [width 1000]
+                        [height 200]))
+
 ;(send test-frame show #t)
 ;
 ;(define test-menu-bar (send test-frame get-menu-bar))
