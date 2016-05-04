@@ -48,6 +48,11 @@
 
 (define default-set-time 1)
 
+; Default error string from bridge.
+; Eventually directly log errors instead of using this global variable.
+
+(define bridgeError "")
+
 ;; Number of lights.
 
 (define number-of-lights 16)
@@ -63,23 +68,6 @@
        [parent primary-patch]
        [bulb i]
        [group 0]))
-
-; Initialize variables for lights to send commands to and the lighting
-; state to send.
-(define lightsToCue '(#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
-;(define lightingState '(#f 1 0 0))
-(define lightingState
-  (make-hash
-   (hash->list
-    (hash
-     'on #f
-     'onChange #f
-     'bri 1
-     'briChange #f
-     'hue 0
-     'hueChange #f
-     'sat 0
-     'satChange #f))))
 
 ; Now it is time to create the main interaction window.
 
@@ -117,30 +105,55 @@
                                             [spacing 3]))
 
 ; Create some check boxes to select lights.
-(for ([i (in-range 1 9)])
-  (new check-box% [parent lights-select-panel-top]
-       [label (string-append "LX " (~a i))]
-       [value #f]))
-(for ([i (in-range 9 17)])
-  (new check-box% [parent lights-select-panel-bottom]
-       [label (string-append "LX " (~a i))]
-       [value #f]))
+(let ([panel-divisor (ceiling (/ range-of-lights 2))])
+  (for ([i (in-range 1 panel-divisor)])
+    (new check-box% [parent lights-select-panel-top]
+         [label (string-append "LX " (~a i))]
+         [value #f]))
+  (for ([i (in-range panel-divisor range-of-lights)])
+    (new check-box% [parent lights-select-panel-bottom]
+         [label (string-append "LX " (~a i))]
+         [value #f])))
 
 (define lights-clear-button (new button% [parent lights-select-panel-access-buttons]
-                               [label "Clear"]
-                               [callback (lambda (button event)
-                                           (for ([i (in-range 8)])
-                                             (send (list-ref (send lights-select-panel-top get-children) i) set-value #f))
-                                           (for ([i (in-range 8)])
-                                             (send (list-ref (send lights-select-panel-bottom get-children) i) set-value #f)))]))
+                                 [label "Clear"]
+                                 [callback (lambda (button event)
+                                             (let ([number-of-boxes
+                                                    (floor (/ range-of-lights 2))])
+                                               (for ([i (in-range number-of-boxes)])
+                                                 (send
+                                                  (list-ref
+                                                   (send lights-select-panel-top get-children)
+                                                   i)
+                                                  set-value #f))
+                                               (for ([i (in-range number-of-boxes)])
+                                                 (send
+                                                  (list-ref
+                                                   (send lights-select-panel-bottom get-children)
+                                                   i)
+                                                  set-value #f))))]))
 
 (define lights-select-all-button (new button% [parent lights-select-panel-access-buttons]
-                                   [label "Select All"]
-                                   [callback (lambda (button event)
-                                               (for ([i (in-range 8)])
-                                                 (send (list-ref (send lights-select-panel-top get-children) i) set-value #t))
-                                               (for ([i (in-range 8)])
-                                                 (send (list-ref (send lights-select-panel-bottom get-children) i) set-value #t)))]))
+                                      [label "Select All"]
+                                      [callback (lambda (button event)
+                                                  (let ([number-of-boxes
+                                                         (floor (/ range-of-lights 2))])
+                                                    (for ([i (in-range number-of-boxes)])
+                                                      (send
+                                                       (list-ref
+                                                        (send
+                                                         lights-select-panel-top
+                                                         get-children)
+                                                        i)
+                                                       set-value #t))
+                                                    (for ([i (in-range number-of-boxes)])
+                                                      (send
+                                                       (list-ref
+                                                        (send
+                                                         lights-select-panel-bottom
+                                                         get-children)
+                                                        i)
+                                                       set-value #t))))]))
 
 ; Next is the panel for setting the attributes.
 (define lightsAttributes (new vertical-panel% [parent control-window-root-area]
@@ -233,17 +246,24 @@
                                             [number new-cue-number]
                                             [label new-cue-name]
                                             [parent primary-cue-list]
-                                            [json-value (retrieveBridgeStatus bridge-address hue-user-name)]
+                                            [json-value (retrieveBridgeStatus
+                                                         bridge-address
+                                                         hue-user-name)]
                                             [time (* new-cue-time 10)])
                                        (send cue-list-display clear)
                                        (let ([cues (send primary-cue-list get-children)])
                                          (for ([i (in-range (length cues))])
-                                           (send cue-list-display append (string-append (number->string (send (list-ref cues i) get-number))
-                                                                                 ". "
-                                                                                 (send (list-ref cues i) get-label)
-                                                                                 " - "
-                                                                                 (number->string (/ (send (list-ref cues i) get-time) 10))
-                                                                                 "s"))))
+                                           (send
+                                            cue-list-display
+                                            append
+                                            (string-append
+                                             (number->string (send (list-ref cues i) get-number))
+                                             ". "
+                                             (send (list-ref cues i) get-label)
+                                             " - "
+                                             (number->string
+                                              (/ (send (list-ref cues i) get-time) 10))
+                                             "s"))))
                                        (send save-cue-name-field set-value "")
                                        (send save-cue-number-field set-value
                                              (number->string (+ new-cue-number 1))))
@@ -324,17 +344,20 @@
                          [alignment '(left center)]))
 
 (define delete-button (new button% [parent delete-panel]
-                          [label "Delete"]
-                          [callback (lambda (button event)
-                                      (delete-cue 
-                                       primary-cue-list 
-                                       (send cue-list-display get-selection))
-                                      (send cue-list-display delete (send cue-list-display get-selection))
-                                      (clear-show saved-show-file)
-                                      (save-show
-                                       primary-patch
-                                       primary-cue-list
-                                       saved-show-write-port))]))
+                           [label "Delete"]
+                           [callback (lambda (button event)
+                                       (delete-cue 
+                                        primary-cue-list 
+                                        (send cue-list-display get-selection))
+                                       (send
+                                        cue-list-display
+                                        delete
+                                        (send cue-list-display get-selection))
+                                       (clear-show saved-show-file)
+                                       (save-show
+                                        primary-patch
+                                        primary-cue-list
+                                        saved-show-write-port))]))
 
 (define restore-panel (new horizontal-panel% [parent restore-and-delete-panel]
                           [alignment '(right center)]))
@@ -377,7 +400,8 @@
                                                       primary-patch
                                                       primary-cue-list
                                                       saved-show-read-port)
-                                                     (let ([cues (send primary-cue-list get-children)])
+                                                     (let ([cues
+                                                            (send primary-cue-list get-children)])
                                                        (append-cues cues cue-list-display))
                                                      (for ([i (in-range 1 range-of-lights)])
                                                        (send
@@ -474,8 +498,13 @@
                                [label "Save"]
                                [callback (lambda (button event)
                                            (set! bridge-address (send bridgeAddressField get-value))
-                                           (let ([bridgeSettings (make-hash (hash->list (file->value bridge-settings-file)))])
-                                             (hash-set! bridgeSettings 'bridge-address (send bridgeAddressField get-value))
+                                           (let ([bridgeSettings
+                                                  (make-hash
+                                                   (hash->list (file->value bridge-settings-file)))])
+                                             (hash-set!
+                                              bridgeSettings
+                                              'bridge-address
+                                              (send bridgeAddressField get-value))
                                              (with-output-to-file bridge-settings-file
                                                (lambda () (write bridgeSettings))
                                                #:mode 'text
@@ -484,8 +513,6 @@
                                [style '(border)]))
 
 ; Set Bridge User Name Dialog
-
-(define bridgeError "")
 
 (define setUserName!
   (lambda (device)
@@ -502,7 +529,9 @@
       (let ([bridgeResponse (read-json jsonResponse)])
         (cond
           ((equal? (hash-keys (car bridgeResponse)) '(error))
-           (set! bridgeError (string-append "Error: " (hash-ref (hash-ref (car bridgeResponse) 'error) 'description))))
+           (set!
+            bridgeError
+            (string-append "Error: " (hash-ref (hash-ref (car bridgeResponse) 'error) 'description))))
           ((equal? (hash-keys (car bridgeResponse)) '(success))
            (set! hue-user-name (hash-ref (hash-ref (car bridgeResponse) 'success) 'username))
            (set! bridgeError "")))))))
@@ -515,7 +544,9 @@
                                   [alignment '(center center)]
                                   [min-width 300]))
 (define userNameMessage (new message% [parent userNameMessagePanel]
-                             [label "Enter Device Name (ie: My Macbook). Press Link Button on Bridge. Click \"Set\"."]
+                             [label (string-join
+                                     '("Enter Device Name (ie: My Macbook). "
+                                     "Press Link Button on Bridge. Click \"Set\"."))]
                              [vert-margin 10]
                              [horiz-margin 20]
                              [auto-resize #t]))
@@ -548,7 +579,9 @@
                                         (hash-set! bridgeSettings
                                                    'userDevice
                                                    user-device-name)
-                                        (set! device-type (string-append app-name (string-append "#" user-device-name)))
+                                        (set!
+                                         device-type
+                                         (string-append app-name "#" user-device-name))
                                         (hash-set! bridgeSettings
                                                    'device-type
                                                    device-type)
@@ -573,8 +606,11 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
 
 ; Bridge Update Dialog
 
-(define portalError "Error: Portal Connection Unavailable. Check the bridge's internet connection. Is the third light a steady blue?")
-(define updatingError "Error: Bridge Is Currently Updating. Please Wait for Blue Lights to Return to Normal")
+(define portalError (string-join '("Error: Portal Connection Unavailable. "
+                                   "Check the bridge's internet connection. "
+                                   "Is the third light a steady blue?")))
+(define updatingError (string-join '("Error: Bridge Is Currently Updating. "
+                                     "Please Wait for Blue Lights to Return to Normal.")))
 
 (define updateBridge
   (lambda ()
@@ -591,7 +627,9 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
         (cond
           ((equal? (hash-ref (hash-ref bridgeResponse 'portalstate) 'signedon) #t)
            (cond
-             ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #t)
+             ((equal?
+               (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge)
+               #t)
               (cond
                 ; Possible Responses:
                 ; 0 = No update available
@@ -650,7 +688,9 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                         (set! bridgeError "Done."))))))
                 ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 3)
                  (set! bridgeError updatingError))))
-             ((equal? (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge) #f)
+             ((equal?
+               (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge)
+               #f)
               (set! bridgeError "No Update Available."))))
           (else (set! bridgeError portalError)))))))
 
@@ -662,7 +702,9 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                                         [alignment '(center center)]
                                         [min-width 200]))
 (define updateFirmwareMessage (new message% [parent updateFirmwareMessagePanel]
-                                   [label "Update Firmware? Bridge Must Be Connected to the Internet."]
+                                   [label (string-join
+                                           '("Update Firmware? Bridge Must "
+                                             "Be Connected to the Internet."))]
                                    [horiz-margin 20]))
 
 (define updateFirmwarePanel (new horizontal-panel% [parent updateFirmwareDialog]
