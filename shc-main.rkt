@@ -19,7 +19,7 @@
 (support-directory-exists?)
 
 (define setup-needed
-  (bridge-settings-file-exists?))
+  (not (bridge-settings-file-exists?)))
 
 
 ;; Bridge Communication Variables. Communication will not work until 
@@ -33,6 +33,12 @@
 (define hue-user-name (hash-ref (file->value bridge-settings-file) 'hue-user-name))
 (define device-type (hash-ref (file->value bridge-settings-file) 'device-type))
 (define app-name (hash-ref (file->value bridge-settings-file) 'app-name))
+
+(set! setup-needed
+      (cond
+        ((equal? bridge-address "0.0.0.0") #t)
+        ((equal? user-device-name "") #t)
+        (else #f)))
 
 ;; Default time for lights to transition while setting them. This does not effect cues.
 
@@ -268,10 +274,10 @@
 
 ; Create Set Button
 
-(define cue-set-panel (new horizontal-panel% [parent cue-set-save-panel]
+(define lights-set-panel (new horizontal-panel% [parent cue-set-save-panel]
                         [alignment '(right center)]))
 
-(define cue-set-button (new button% [parent cue-set-panel]
+(define lights-set-button (new button% [parent lights-set-panel]
                          [label "Set"]
                          [min-height 50]
                          [callback (lambda (button event)
@@ -355,7 +361,7 @@
 (define restore-button (new button% [parent restore-panel]
                            [label "Restore"]
                            [callback (lambda (button event)
-                                       (restore-cue 
+                                       (thread (restore-cue 
                                         primary-cue-list 
                                         (send cue-list-display get-selection) 
                                         range-of-lights
@@ -367,7 +373,7 @@
                                         first-status-row
                                         second-status-row
                                         bridge-address
-                                        hue-user-name))]
+                                        hue-user-name)))]
                            [style '(border)]))
 
 ;; "Show" Menu. Items actually in Bridge menu. Need to be moved to File menu in shc-gui.rkt.
@@ -698,7 +704,7 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
 
 ;; If "Bridge Settings.shc" is newly created.
 
-(when (equal? setup-needed #f)
+(when (equal? setup-needed #t)
   (define setup-dialog (new dialog% [parent control-window]
                             [label "Setup"]))
   (define setup-panel (new vertical-panel% [parent setup-dialog]
