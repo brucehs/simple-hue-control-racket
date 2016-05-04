@@ -327,9 +327,9 @@
 
 (define cue-list-window (new shc-frame% [label "Main Cue List"]))
 
-(define cue-list-window-container (send cue-list-window get-area-container))
+(define cue-list-window-root-area (send cue-list-window get-area-container))
 
-(define cue-list-panel (new vertical-panel% [parent cue-list-window-container]
+(define cue-list-panel (new vertical-panel% [parent cue-list-window-root-area]
                           [alignment '(left center)]
                           [min-width 250]))
 
