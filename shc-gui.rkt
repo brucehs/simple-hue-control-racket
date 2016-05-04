@@ -215,7 +215,7 @@
                        (send light-info show #f))))))))))
 
 
-; Function for reloading cues (?)
+; Function for repopulating the "Main Cue List" window.
 
 (define append-cues
   (lambda (cues choice-display)
