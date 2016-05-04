@@ -343,24 +343,26 @@
 
 ; Create a Window for the Cue List.
 
-(define cue-list-window (new frame% [label "Main Cue List"]))
+(define cue-list-window (new shc-frame% [label "Main Cue List"]))
 
-(define cueListPanel (new vertical-panel% [parent cue-list-window]
+(define cue-list-window-container (send cue-list-window get-area-container))
+
+(define cue-list-panel (new vertical-panel% [parent cue-list-window-container]
                           [alignment '(left center)]
                           [min-width 250]))
 
-(define cue-list-display (new choice% [parent cueListPanel]
+(define cue-list-display (new choice% [parent cue-list-panel]
                        [label "Cues:"]
                        [min-width 230]
                        [choices '()]))
 
-(define restoreAndDeletePanel (new horizontal-panel% [parent cueListPanel]
+(define restore-and-delete-panel (new horizontal-panel% [parent cue-list-panel]
                                    [alignment '(center center)]))
 
-(define deletePanel (new horizontal-panel% [parent restoreAndDeletePanel]
+(define delete-panel (new horizontal-panel% [parent restore-and-delete-panel]
                          [alignment '(left center)]))
 
-(define deleteButton (new button% [parent deletePanel]
+(define delete-button (new button% [parent delete-panel]
                           [label "Delete"]
                           [callback (lambda (button event)
                                       (delete-cue 
@@ -373,10 +375,10 @@
                                        primary-cue-list
                                        saved-show-write-port))]))
 
-(define restorePanel (new horizontal-panel% [parent restoreAndDeletePanel]
+(define restore-panel (new horizontal-panel% [parent restore-and-delete-panel]
                           [alignment '(right center)]))
 
-(define restoreButton (new button% [parent restorePanel]
+(define restore-button (new button% [parent restore-panel]
                            [label "Restore"]
                            [callback (lambda (button event)
                                        (restore-cue 
@@ -404,11 +406,6 @@
 
 (define hue-window-menu-show
   (list-ref (send (send control-window get-menu-bar) get-items) 2))
-
-;; Procedure to repopulate "Main Cue List" window.
-;; Needs to be in GUI file, as cue-list-display does not register as an argument.
-
-
 
 (define hue-window-menu-show-reload (new menu-item%
                                          [parent hue-window-menu-show]
