@@ -3,15 +3,15 @@
 (require gregor)
 
 ;; Provide settings files.
-(provide supportDirectory
-         bridgeSettingsFile)
+(provide support-directory
+         bridge-settings-file)
 
 ;; Saved show file.
 (provide saved-show-file)
 
 ;; Setting files procedures.
-(provide supportDirectoryExists?
-         bridgeSettingsFileExists?)
+(provide support-directory-exists?
+         bridge-settings-file-exists?)
 
 ;; Provide patch procedures.
 (provide set-patch!
@@ -26,11 +26,11 @@
 ;; become a plist file within ~/Libarary/Preferences, but I am unable to get
 ;; xml/plist to work at the moment.
 
-;; Long-term TUDU: Test supportDirectory on Linux and Windows.
+;; Long-term TUDU: Test support-directory on Linux and Windows.
 
 ;; Define the location of the bridge settings file and the file itself.
 
-(define supportDirectory
+(define support-directory
   (let ([system (system-type 'os)])
     (cond
       ((equal? system 'macosx)
@@ -46,35 +46,35 @@
                       (path->string (find-system-path 'doc-dir))
                       "Simple Hue Control\\Settings\\"))))))
 
-(define bridgeSettingsFile
-  (build-path supportDirectory (string->path "Bridge Settings.shc")))
+(define bridge-settings-file
+  (build-path support-directory (string->path "Bridge Settings.shc")))
 
 ;; The saved show file.
 (define saved-show-file
-  (build-path supportDirectory (string->path "Saved Show.shc")))
+  (build-path support-directory (string->path "Saved Show.shc")))
 
 ;; Procedures for determining if the support directory and settings file exist
 ;; and creating them if they do not.
 
-(define supportDirectoryExists?
+(define support-directory-exists?
   (lambda ()
     (cond
-      ((not (directory-exists? supportDirectory))
-       (make-directory supportDirectory)
+      ((not (directory-exists? support-directory))
+       (make-directory support-directory)
        #f)
       (else #t))))
 
-(define bridgeSettingsFileExists?
+(define bridge-settings-file-exists?
   (lambda ()
     (cond
-      ((not (file-exists? bridgeSettingsFile))
+      ((not (file-exists? bridge-settings-file))
        (write-to-file
         (hash 'bridge-address "0.0.0.0"
               'user-device ""
               'hue-user-name ""
               'app-name "simple_hue_control"
               'device-type "")
-        bridgeSettingsFile)
+        bridge-settings-file)
        #f)
       (else #t))))
 
