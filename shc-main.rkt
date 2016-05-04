@@ -112,14 +112,9 @@
                                       [spacing 3]))
 
 (define lights-select-panel-access-buttons (new horizontal-panel% [parent lights-select-panel-buttons]
-                                            [alignment '(left center)]
+                                            [alignment '(right center)]
                                             [border 4]
                                             [spacing 3]))
-
-(define lights-select-panel-select-button (new horizontal-panel% [parent lights-select-panel-buttons]
-                                           [alignment '(right center)]
-                                           [border 4]
-                                           [spacing 3]))
 
 ; Create some check boxes to select lights.
 (for ([i (in-range 1 9)])
@@ -130,13 +125,6 @@
   (new check-box% [parent lights-select-panel-bottom]
        [label (string-append "LX " (~a i))]
        [value #f]))
-
-(define lights-select-button (new button% [parent lights-select-panel-select-button]
-                                [label "Lights"]
-                                [callback (lambda (button event)
-                                            (set! lightsToCue (get-lights
-                                                               (send lights-select-panel-top get-children)
-                                                               (send lights-select-panel-bottom get-children))))]))
 
 (define lights-clear-button (new button% [parent lights-select-panel-access-buttons]
                                [label "Clear"]
@@ -192,24 +180,6 @@
                               [style '(horizontal)]
                               [min-width 10]
                               [stretchable-width 10]))
-
-(define lightsAttributesButtonPanel (new horizontal-panel% [parent lightsAttributes]
-                                         [alignment '(right center)]))
-
-(define lightsAttributesButton (new button% [parent lightsAttributesButtonPanel]
-                                    [label "Lighting State!"]
-                                    [callback (lambda (button event)
-                                                (let ([light-objects (lightList lightsToCue)])
-                                                  (for ([i (in-range (length light-objects))])
-                                                    (send (list-ref
-                                                           (send primary-patch get-children)
-                                                           (- (list-ref light-objects i) 1))
-                                                          set-state (make-hash
-                                                                     (append
-                                                                      (on-pair lightsChange)
-                                                                      (bri-pair lightsIntensity)
-                                                                      (hue-pair lightsColor)
-                                                                      (sat-pair lightsSaturation)))))))]))
 
 ; Now we need to send the cue to the bridge and save the cue.
 ; The Save Cue button saves the current lighting state. NOT the one about
@@ -295,8 +265,17 @@
                          [label "Set"]
                          [min-height 50]
                          [callback (lambda (button event)
+                                     (get-attributes
+                                      lights-select-panel-top
+                                      lights-select-panel-bottom
+                                      lightsChange
+                                      lightsIntensity
+                                      lightsColor
+                                      lightsSaturation)
                                      (set-lights!
-                                      (lightList lightsToCue)
+                                      (lightList (get-lights
+                                                  lights-select-panel-top
+                                                  lights-select-panel-bottom))
                                       primary-patch
                                       default-set-time
                                       bridge-address

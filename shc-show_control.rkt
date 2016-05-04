@@ -7,6 +7,7 @@
 
 ;; Provide Main Light Adjustments.
 (provide get-lights
+         get-attributes
          lightList
          on-pair
          bri-pair
@@ -31,17 +32,35 @@
 ; Procedures for translating selection in the "Select Lights to Cue" panel
 ; to data to be sent to the bridge.
 
-(define get-lights-row 
-  (lambda (panel-contents)
-    (cond
-      ((null? panel-contents) (quote ()))
-      (else (cons
-             (send (car panel-contents) get-value)
-             (get-lights-row (cdr panel-contents)))))))
+(define get-lights
+  (lambda (panel-top panel-bottom)
+    (append
+     (let ([object-lst (send panel-top get-children)])
+       (for/list ([i (in-range (length object-lst))])
+         (send (list-ref object-lst i) get-value)))
+     (let ([object-lst (send panel-bottom get-children)])
+       (for/list ([i (in-range (length object-lst))])
+         (send (list-ref object-lst i) get-value))))))
 
-(define get-lights 
-  (lambda (first-row second-row)
-    (append (get-lights-row first-row) (get-lights-row second-row))))
+(define get-attributes
+  (lambda (top-panel
+           bottom-panel
+           lights-on?
+           lights-intensity
+           lights-color
+           lights-saturation)
+    (let ([light-objects (lightList
+                          (get-lights top-panel bottom-panel))])
+      (for ([i (in-range (length light-objects))])
+        (send (list-ref
+               (send primary-patch get-children)
+               (- (list-ref light-objects i) 1))
+              set-state (make-hash
+                         (append
+                          (on-pair lights-on?)
+                          (bri-pair lights-intensity)
+                          (hue-pair lights-color)
+                          (sat-pair lights-saturation))))))))
 
 (define hues-to-change
   (lambda (lst-of-lights)
