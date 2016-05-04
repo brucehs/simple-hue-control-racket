@@ -343,9 +343,9 @@
 
 ; Create a Window for the Cue List.
 
-(define cueListWindow (new frame% [label "Main Cue List"]))
+(define cue-list-window (new frame% [label "Main Cue List"]))
 
-(define cueListPanel (new vertical-panel% [parent cueListWindow]
+(define cueListPanel (new vertical-panel% [parent cue-list-window]
                           [alignment '(left center)]
                           [min-width 250]))
 
@@ -772,38 +772,10 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                                         (updateBridge)
                                         (send updateFirmwareMessage set-label bridgeError))]))
 
-; Windows Menu
-;(define hueWindowMenuWindows (new menu% [parent control-window-menu-bar]
-;                                  [label "Windows"]))
-;(define hueWindowMenuWindowsNum1 (new menu-item% [parent hueWindowMenuWindows]
-;                                      [label (send control-window get-label)]
-;                                      [callback (lambda (menu event)
-;                                                  (send control-window iconize #f))]
-;                                      [shortcut #\1]
-;                                      [shortcut-prefix '(cmd)]))
-;(define hueWindowMenuWindowsNum2 (new menu-item% [parent hueWindowMenuWindows]
-;                                      [label (send statusWindow get-label)]
-;                                      [callback (lambda (menu event)
-;                                                  (send statusWindow iconize #f))]
-;                                      [shortcut #\2]
-;                                      [shortcut-prefix '(cmd)]))
-;(define hueWindowMenuWindowsNum3 (new menu-item% [parent hueWindowMenuWindows]
-;                                      [label (send allLights get-label)]
-;                                      [callback (lambda (menu event)
-;                                                  (send allLights iconize #f))]
-;                                      [shortcut #\3]
-;                                      [shortcut-prefix '(cmd)]))
-;(define hueWindowMenuWindowsNum4 (new menu-item% [parent hueWindowMenuWindows]
-;                                      [label (send cueListWindow get-label)]
-;                                      [callback (lambda (menu event)
-;                                                  (send cueListWindow iconize #f))]
-;                                      [shortcut #\4]
-;                                      [shortcut-prefix '(cmd)]))
-
 ; Show the Windows
 
 (send light-status-window show #t)
-(send cueListWindow show #t)
+(send cue-list-window show #t)
 (send control-window show #t)
 
 ;; If "Bridge Settings.shc" is newly created.
