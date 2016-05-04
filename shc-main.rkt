@@ -44,7 +44,9 @@
 (define saved-show-read-port
   (open-input-file saved-show-file #:mode 'text))
 
+;; Default time for lights to transition while setting them. This does not effect cues.
 
+(define default-set-time 1)
 
 ;; Number of lights.
 
@@ -209,26 +211,6 @@
                                                                       (hue-pair lightsColor)
                                                                       (sat-pair lightsSaturation)))))))]))
 
-; Now we set the cue time.
-
-(define cue-time 1)
-
-(define cue-time-panel (new horizontal-panel% [parent control-window-root-area]
-                          [style '(border)]))
-
-(define cue-time-field (new text-field% [parent cue-time-panel]
-                          [label "Cue Time in Seconds"]))
-
-(define cue-time-button (new button% [parent cue-time-panel]
-                              [label "Time"]
-                              [callback (lambda (button event)
-                                          (cond
-                                            ((not (number? (string->number (send cue-time-field get-value))))
-                                             (set! cue-time 0))
-                                            (else
-                                             (set! cue-time
-                                                   (inexact->exact (* (string->number (send cue-time-field get-value)) 10))))))]))
-
 ; Now we need to send the cue to the bridge and save the cue.
 ; The Save Cue button saves the current lighting state. NOT the one about
 ; to be sent.
@@ -316,7 +298,7 @@
                                      (set-lights!
                                       (lightList lightsToCue)
                                       primary-patch
-                                      cue-time
+                                      default-set-time
                                       bridge-address
                                       hue-user-name)
                                      (update-all-lights
