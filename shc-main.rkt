@@ -41,7 +41,7 @@
 ; Default error string from bridge.
 ; Eventually directly log errors instead of using this global variable.
 
-(define bridgeError "")
+(define bridge-error "")
 
 ;; Number of lights.
 
@@ -146,16 +146,16 @@
                                                        set-value #t))))]))
 
 ; Next is the panel for setting the attributes.
-(define lightsAttributes (new vertical-panel% [parent control-window-root-area]
+(define lights-attributes-panel (new vertical-panel% [parent control-window-root-area]
                               [style '(border)]))
-(define lightsOn (new horizontal-panel% [parent lightsAttributes]))
-(define lightsChange (new radio-box% [parent lightsOn]
+(define lights-on-panel (new horizontal-panel% [parent lights-attributes-panel]))
+(define lights-on-box (new radio-box% [parent lights-on-panel]
                           [label "On or Off?"]
                           [choices '("On" "Off")]
                           [style '(horizontal)]))
 
-(define lightsBri (new horizontal-panel% [parent lightsAttributes]))
-(define lightsIntensity (new slider% [parent lightsBri]
+(define lights-bri-panel (new horizontal-panel% [parent lights-attributes-panel]))
+(define lights-bri-box (new slider% [parent lights-bri-panel]
                              [label "Intensity?"]
                              [min-value 1]
                              [max-value 254]
@@ -164,8 +164,8 @@
                              [min-width 10]
                              [stretchable-width 10]))
 
-(define lightsCol (new horizontal-panel% [parent lightsAttributes]))
-(define lightsColor (new slider% [parent lightsCol]
+(define lights-color-panel (new horizontal-panel% [parent lights-attributes-panel]))
+(define lights-color-box (new slider% [parent lights-color-panel]
                          [label "Hue?"]
                          [min-value 0]
                          [max-value 65535]
@@ -174,8 +174,8 @@
                          [min-width 10]
                          [stretchable-width 10]))
 
-(define lightsSat (new horizontal-panel% [parent lightsAttributes]))
-(define lightsSaturation (new slider% [parent lightsSat]
+(define lights-sat-panel (new horizontal-panel% [parent lights-attributes-panel]))
+(define lights-sat-box (new slider% [parent lights-sat-panel]
                               [label "Saturation?"]
                               [min-value 0]
                               [max-value 254]
@@ -278,10 +278,10 @@
                                      (get-attributes
                                       lights-select-panel-top
                                       lights-select-panel-bottom
-                                      lightsChange
-                                      lightsIntensity
-                                      lightsColor
-                                      lightsSaturation)
+                                      lights-on-box
+                                      lights-bri-box
+                                      lights-color-box
+                                      lights-sat-box)
                                      (set-lights!
                                       (lightList (get-lights
                                                   lights-select-panel-top
@@ -370,13 +370,7 @@
                                         hue-user-name))]
                            [style '(border)]))
 
-;; Menu Bars
-
-;; For Hue Window
-
-;(define control-window-menu-bar (new menu-bar% [parent control-window]))
-
-;; Show Menu
+;; "Show" Menu. Items actually in Bridge menu. Need to be moved to File menu in shc-gui.rkt.
 
 (define hue-window-menu-show
   (list-ref (send (send control-window get-menu-bar) get-items) 2))
@@ -427,13 +421,14 @@
  saved-show-write-port)
 
 ;; Bridge Menu
+
 (define hueWindowMenuBridge
   (list-ref (send (send control-window get-menu-bar) get-items) 2))
 
 (define hueWindowMenuBridgeBridgeAddress (new menu-item% [parent hueWindowMenuBridge]
                                               [label "Set Bridge Address…"]
                                               [callback (lambda (menu event)
-                                                          (send bridgeAddressDialog show #t))]))
+                                                          (send bridge-address-dialog show #t))]))
 (define hueWindowMenuBridgeUserName (new menu-item% [parent hueWindowMenuBridge]
                                          [label "Set User Name…"]
                                          [callback (lambda (menu event)
@@ -445,45 +440,51 @@
                                                            (send updateFirmwareDialog show #t))]))
 
 ;; Set Bridge Address Dialog
-(define bridgeAddressDialog (new dialog% [label "Enter Bridge Address"]
+
+(define bridge-address-dialog (new dialog% [label "Enter Bridge Address"]
                                  [min-width 300]
                                  [min-height 100]))
-(define bridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
+
+(define bridge-address-panel (new horizontal-panel% [parent bridge-address-dialog]
                                 [alignment '(left center)]
                                 [min-width 300]))
-(define bridgeAddressField (new text-field% [parent bridgeAddressPanel]
+
+(define bridge-address-field (new text-field% [parent bridge-address-panel]
                                 [label "Bridge Address:"]
                                 [init-value bridge-address]
                                 [horiz-margin 20]))
-(define setBridgeAddressPanel (new horizontal-panel% [parent bridgeAddressDialog]
+
+(define set-bridge-address-panel (new horizontal-panel% [parent bridge-address-dialog]
                                    [alignment '(center center)]
                                    [min-width 300]))
-(define cancelBridgeAddress (new button% [parent setBridgeAddressPanel]
+
+(define cancel-bridge-address-button (new button% [parent set-bridge-address-panel]
                                  [label "Cancel"]
                                  [callback (lambda (button event)
-                                             ;(send bridgeAddressField set-value "0.0.0.0")
-                                             (send bridgeAddressDialog show #f))]))
-(define saveBridgeAddress (new button% [parent setBridgeAddressPanel]
+                                             ;(send bridge-address-field set-value "0.0.0.0")
+                                             (send bridge-address-dialog show #f))]))
+
+(define save-bridge-address-button (new button% [parent set-bridge-address-panel]
                                [label "Save"]
                                [callback (lambda (button event)
-                                           (set! bridge-address (send bridgeAddressField get-value))
-                                           (let ([bridgeSettings
+                                           (set! bridge-address (send bridge-address-field get-value))
+                                           (let ([bridge-settings
                                                   (make-hash
                                                    (hash->list (file->value bridge-settings-file)))])
                                              (hash-set!
-                                              bridgeSettings
+                                              bridge-settings
                                               'bridge-address
-                                              (send bridgeAddressField get-value))
+                                              (send bridge-address-field get-value))
                                              (with-output-to-file bridge-settings-file
-                                               (lambda () (write bridgeSettings))
+                                               (lambda () (write bridge-settings))
                                                #:mode 'text
                                                #:exists 'replace)
-                                             (send bridgeAddressDialog show #f)))]
+                                             (send bridge-address-dialog show #f)))]
                                [style '(border)]))
 
 ; Set Bridge User Name Dialog
 
-(define setUserName!
+(define set-user-name!
   (lambda (device)
     (let-values ([(httpStatus httpHeader jsonResponse)
                   (http-sendrecv
@@ -499,11 +500,11 @@
         (cond
           ((equal? (hash-keys (car bridgeResponse)) '(error))
            (set!
-            bridgeError
+            bridge-error
             (string-append "Error: " (hash-ref (hash-ref (car bridgeResponse) 'error) 'description))))
           ((equal? (hash-keys (car bridgeResponse)) '(success))
            (set! hue-user-name (hash-ref (hash-ref (car bridgeResponse) 'success) 'username))
-           (set! bridgeError "")))))))
+           (set! bridge-error "")))))))
 
 
 (define userNameDialog (new dialog% [label "Enter Hue Bridge User Name"]
@@ -554,9 +555,9 @@
                                         (hash-set! bridgeSettings
                                                    'device-type
                                                    device-type)
-                                        (setUserName! device-type)
+                                        (set-user-name! device-type)
                                         (cond
-                                          ((equal? bridgeError "")
+                                          ((equal? bridge-error "")
                                            (hash-set! bridgeSettings
                                                       'hue-user-name
                                                       hue-user-name)
@@ -568,7 +569,7 @@
                                           (else
                                            (send userNameMessage set-label
                                                  (string-append 
-                                                  bridgeError 
+                                                  bridge-error 
                                                   ". Enter Device Name (ie: My Macbook).
 Press Link Button on Bridge. Click \"Set\"."))))))]
                           [style '(border)]))
@@ -623,14 +624,14 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                    (let ([bridgeResponse2 (read-json jsonResponse2)])
                      (cond 
                        ((equal? (hash-keys (car bridgeResponse2)) '(error))
-                        (set! bridgeError (string-append "Error: " 
+                        (set! bridge-error (string-append "Error: " 
                                                          (hash-ref 
                                                           (hash-ref (car bridgeResponse2) 'error) 
                                                           'description))))
                        ((equal? (hash-keys (car bridgeResponse2)) '(success))
-                        (set! bridgeError "Error: No Update Available. Will Check."))))))
+                        (set! bridge-error "Error: No Update Available. Will Check."))))))
                 ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 1)
-                 (set! bridgeError "Error: Update Still Downloading. Please Wait."))
+                 (set! bridge-error "Error: Update Still Downloading. Please Wait."))
                 ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 2)
                  ; Need to initiate Update.
                  (let-values ([(httpStatus2 httpHeader2 jsonResponse2)
@@ -649,19 +650,19 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                    (let ([bridgeResponse2 (read-json jsonResponse2)])
                      (cond 
                        ((equal? (hash-keys (car bridgeResponse2)) '(error))
-                        (set! bridgeError (string-append "Error: " 
+                        (set! bridge-error (string-append "Error: " 
                                                          (hash-ref 
                                                           (hash-ref (car bridgeResponse2) 'error) 
                                                           'description))))
                        ((equal? (hash-keys (car bridgeResponse2)) '(success))
-                        (set! bridgeError "Done."))))))
+                        (set! bridge-error "Done."))))))
                 ((equal? (hash-ref (hash-ref bridgeResponse 'swupdate) 'updatestate) 3)
-                 (set! bridgeError updatingError))))
+                 (set! bridge-error updatingError))))
              ((equal?
                (hash-ref (hash-ref (hash-ref bridgeResponse 'swupdate) 'devicetypes) 'bridge)
                #f)
-              (set! bridgeError "No Update Available."))))
-          (else (set! bridgeError portalError)))))))
+              (set! bridge-error "No Update Available."))))
+          (else (set! bridge-error portalError)))))))
 
 (define updateFirmwareDialog (new dialog% [label "Update Bridge Firmware"]
                                   [min-width 350]
@@ -687,7 +688,7 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
                             [label "Update"]
                             [callback (lambda (button event)
                                         (updateBridge)
-                                        (send updateFirmwareMessage set-label bridgeError))]))
+                                        (send updateFirmwareMessage set-label bridge-error))]))
 
 ; Show the Windows
 
