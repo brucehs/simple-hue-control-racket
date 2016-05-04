@@ -79,67 +79,6 @@
      'sat 0
      'satChange #f))))
 
-; We need to update the Status Window with the lights just used.
-; This is for the "Lighting Status" Window. Data does not come from
-; the bridge. Rather from the last command sent.
-
-(define lastLightsMessage "Lights: ")
-(define lastOnMessage "On?: ")
-(define lastBriMessage "Intensity: ")
-(define lastHueMessage "Hue: ")
-(define lastSatMessage "Saturation: ")
-(define lastTransitiontimeMessage "Cue Time: ")
-
-(define updateLastLights
-  (lambda (lights)
-    (let ([numberOfLights (length lights)])
-      (set! lastLightsMessage "Lights: ")
-      (for ([i (in-range numberOfLights)])
-        (set! lastLightsMessage (string-append lastLightsMessage (string-append (number->string (list-ref lights i)) ", "))))
-      (set! lastLightsMessage (string-trim lastLightsMessage ", ")))
-    (send lastLightsDisplay set-label lastLightsMessage)))
-
-(define updateOn
-  (lambda (state)
-    (cond
-      ((equal? (hash-ref state 'on) #t) (set! lastOnMessage "On?: TRUE"))
-      ((equal? (hash-ref state 'on) #f) (set! lastOnMessage "On?: FALSE"))
-      (else (set! lastOnMessage "On? ")))
-    (send lastOnDisplay set-label lastOnMessage)))
-
-(define updateBri
-  (lambda (state)
-    (set! lastBriMessage (string-append "Intensity: " (number->string (hash-ref state 'bri))))
-    (send lastBriDisplay set-label lastBriMessage)))
-
-(define updateHue
-  (lambda (state)
-    (set! lastHueMessage (string-append "Hue: " (number->string (hash-ref state 'hue))))
-    (send lastHueDisplay set-label lastHueMessage)))
-
-(define updateSat
-  (lambda (state)
-    (set! lastSatMessage (string-append "Saturation: " (number->string (hash-ref state 'sat))))
-    (send lastSatDisplay set-label lastSatMessage)))
-
-(define updateLastTransitiontime
-  (lambda (time)
-    (cond
-      ((= cue-time 0) (set! lastTransitiontimeMessage "Cue Time: 0 seconds"))
-      (else (set! lastTransitiontimeMessage (string-append (string-append "Cue Time: " (number->string (/ time 10))) " seconds"))))
-    (send lastTransitiontimeDisplay set-label lastTransitiontimeMessage)))
-
-(define updateLastStatus
-  (lambda (lights state time)
-    (updateLastLights lights)
-    (updateOn state)
-    (updateBri state)
-    (updateHue state)
-    (updateSat state)
-    (updateLastTransitiontime time)))
-
-
-
 ; Now it is time to create the main interaction window.
 
 (define control-window (new shc-frame% [label "Simple Hue Control"]))
@@ -380,7 +319,6 @@
                                       cue-time
                                       bridge-address
                                       hue-user-name)
-                                     (updateLastStatus (lightList lightsToCue) lightingState cue-time)
                                      (update-all-lights
                                       1 16
                                       first-status-row
@@ -388,41 +326,6 @@
                                       bridge-address
                                       hue-user-name))]
                          [style '(border)]))
-
-; Now we need a Status Window.
-
-(define statusWindow (new frame% [label "Lighting Status"]
-                          [min-width 550]))
-
-; Display the last lighting change.
-
-(define lastLightsGroup (new group-box-panel% [parent statusWindow]
-                             [label "Last Lights & State"]
-                             [alignment '(left top)]))
-
-(define lastLightsDisplay (new message% [parent lastLightsGroup]
-                               [label lastLightsMessage]
-                               [auto-resize #t]))
-
-(define lastOnDisplay (new message% [parent lastLightsGroup]
-                           [label lastOnMessage]
-                           [auto-resize #t]))
-
-(define lastBriDisplay (new message% [parent lastLightsGroup]
-                            [label lastBriMessage]
-                            [auto-resize #t]))
-
-(define lastHueDisplay (new message% [parent lastLightsGroup]
-                            [label lastHueMessage]
-                            [auto-resize #t]))
-
-(define lastSatDisplay (new message% [parent lastLightsGroup]
-                            [label lastSatMessage]
-                            [auto-resize #t]))
-
-(define lastTransitiontimeDisplay (new message% [parent lastLightsGroup]
-                                       [label lastTransitiontimeMessage]
-                                       [auto-resize #t]))
 
 ; Finally we need a window to show the status of all the lights.
 ; This Window gets its data from the bridge.
@@ -899,7 +802,6 @@ Press Link Button on Bridge. Click \"Set\"."))))))]
 
 ; Show the Windows
 
-(send statusWindow show #t)
 (send light-status-window show #t)
 (send cueListWindow show #t)
 (send control-window show #t)
