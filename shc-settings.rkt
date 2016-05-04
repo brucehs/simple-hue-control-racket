@@ -6,9 +6,6 @@
 (provide support-directory
          bridge-settings-file)
 
-;; Saved show file.
-(provide saved-show-file)
-
 ;; Setting files procedures.
 (provide support-directory-exists?
          bridge-settings-file-exists?)
@@ -48,10 +45,6 @@
 
 (define bridge-settings-file
   (build-path support-directory (string->path "Bridge Settings.shc")))
-
-;; The saved show file.
-(define saved-show-file
-  (build-path support-directory (string->path "Saved Show.shc")))
 
 ;; Procedures for determining if the support directory and settings file exist
 ;; and creating them if they do not.

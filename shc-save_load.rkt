@@ -1,11 +1,30 @@
 #lang racket
 
-(require "shc-classes.rkt")
+(require "shc-classes.rkt"
+         "shc-settings.rkt")
+
+(provide saved-show-file
+         saved-show-write-port
+         saved-show-read-port)
 
 (provide save-show
          clear-show
          prep-load-show
          load-show)
+
+;; The saved show file.
+(define saved-show-file
+  (build-path support-directory (string->path "Saved Show.shc")))
+
+;; Open output and input ports for saving single show file.
+
+(define saved-show-write-port
+  (open-output-file saved-show-file #:mode 'text #:exists 'can-update))
+
+(file-stream-buffer-mode saved-show-write-port 'line)
+
+(define saved-show-read-port
+  (open-input-file saved-show-file #:mode 'text))
 
 ;; Procedures to save object fields to hashes.
 

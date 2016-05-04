@@ -34,16 +34,6 @@
 (define device-type (hash-ref (file->value bridge-settings-file) 'device-type))
 (define app-name (hash-ref (file->value bridge-settings-file) 'app-name))
 
-;; Open output and input ports for saving single show file.
-
-(define saved-show-write-port
-  (open-output-file saved-show-file #:mode 'text #:exists 'can-update))
-
-(file-stream-buffer-mode saved-show-write-port 'line)
-
-(define saved-show-read-port
-  (open-input-file saved-show-file #:mode 'text))
-
 ;; Default time for lights to transition while setting them. This does not effect cues.
 
 (define default-set-time 1)
@@ -424,27 +414,6 @@
 ;                                        [label "Clear Previous Show"]
 ;                                        [callback (lambda (menu event)
 ;                                                    (clear-show saved-show-file))]))
-
-;; Lamp Menu
-
-;(define hue-window-menu-lamp
-;  (list-ref (send (send control-window get-menu-bar) get-items) 2))
-;
-;(define hue-window-menu-lamp-patch (new menu-item% [parent hue-window-menu-lamp]
-;                                        [label "Patch"]
-;                                        [callback (lambda (menu event)
-;                                                    (send lamp-patch-dialog show #t))]))
-;(define hue-window-menu-lamp-reset-patch (new menu-item%
-;                                              [parent hue-window-menu-lamp]
-;                                              [label "Reset Patch 1-to-1"]
-;                                              [callback (lambda (menu event)
-;                                                          (set-patch-to-default!
-;                                                           primary-patch
-;                                                           assigned-light-panel)
-;                                                          (save-show
-;                                                           primary-patch
-;                                                           primary-cue-list
-;                                                           saved-show-write-port))]))
 
 ;; Patch Dialog
 
