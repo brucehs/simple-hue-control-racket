@@ -361,19 +361,24 @@
 (define restore-button (new button% [parent restore-panel]
                            [label "Restore"]
                            [callback (lambda (button event)
-                                       (thread (restore-cue 
-                                        primary-cue-list 
-                                        (send cue-list-display get-selection) 
-                                        range-of-lights
-                                        bridge-address
-                                        hue-user-name)
-                                       (update-all-lights
-                                        1
-                                        16
-                                        first-status-row
-                                        second-status-row
-                                        bridge-address
-                                        hue-user-name)))]
+                                       (let ([thrd-1
+                                              (thread (lambda ()
+                                                        (restore-cue 
+                                                         primary-cue-list 
+                                                         (send cue-list-display get-selection) 
+                                                         range-of-lights
+                                                         bridge-address
+                                                         hue-user-name)))]
+                                             [thrd-2
+                                              (thread (lambda () (update-all-lights
+                                                                  1
+                                                                  16
+                                                                  first-status-row
+                                                                  second-status-row
+                                                                  bridge-address
+                                                                  hue-user-name)))])
+                                         #t))]
+                                         
                            [style '(border)]))
 
 ;; "Show" Menu. Items actually in Bridge menu. Need to be moved to File menu in shc-gui.rkt.
@@ -553,7 +558,7 @@
                                         (set! user-device-name 
                                               (send userDeviceNameField get-value))
                                         (hash-set! bridgeSettings
-                                                   'userDevice
+                                                   'user-device
                                                    user-device-name)
                                         (set!
                                          device-type
