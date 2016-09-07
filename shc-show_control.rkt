@@ -120,7 +120,7 @@
 
 (define compare-light-state
   (lambda (hue-object bridge-status light-number)
-    (make-hash
+    (make-immutable-hash
      (list
       (cond
         ((equal? (hash-ref (send hue-object get-state) 'on)
@@ -153,7 +153,7 @@
 
 (define create-hash-for-bridge
   (lambda (hue-object bridge-status light-number)
-    (make-hash
+    (make-immutable-hash
      (append
       (hash->list (compare-light-state hue-object bridge-status light-number))
       (wanted-state->list 'on hue-object)
@@ -224,7 +224,7 @@
 
 (define hashForJson
   (lambda (state time)
-    (make-hash
+    (make-immutable-hash
      (list
       (cond
         ((equal? (hash-ref state 'onChange) #t) (cons 'on (hash-ref state 'on)))
@@ -246,7 +246,7 @@
 (define makeJsonCommand
   (lambda (state time)
     (let ([hashCommand (hashForJson state time)])
-      (cond ((hash-has-key? hashCommand '()) (hash-remove! hashCommand '())))
+      (cond ((hash-has-key? hashCommand '()) (hash-remove hashCommand '())))
       (jsexpr->string hashCommand))))
 
 ;; Procedure for sending a a lighting state to the Bridge.
