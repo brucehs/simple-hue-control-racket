@@ -109,40 +109,40 @@
 ;; state in the bridge.
 
 (define get-light-state
-  (lambda (lightNumber address user-name)
+  (lambda (bridge-status light-number)
     (hash-ref
      (hash-ref
-      (retrieveBridgeStatus address user-name)
-      (string->symbol (number->string lightNumber)))
+      bridge-status
+      (string->symbol (number->string light-number)))
      'state)))
 
 ;; Procedures for direct change.
 
 (define compare-light-state
-  (lambda (hueObject lightNumber address user-name)
+  (lambda (hue-object bridge-status light-number)
     (make-hash
      (list
       (cond
-        ((equal? (hash-ref (send hueObject get-state) 'on)
-                 (hash-ref (get-light-state lightNumber address user-name) 'on))
+        ((equal? (hash-ref (send hue-object get-state) 'on)
+                 (hash-ref (get-light-state bridge-status light-number) 'on))
          (cons 'onChange #f))
         (else
          (cons 'onChange #t)))
       (cond
-        ((equal? (hash-ref (send hueObject get-state) 'bri)
-                 (hash-ref (get-light-state lightNumber address user-name) 'bri))
+        ((equal? (hash-ref (send hue-object get-state) 'bri)
+                 (hash-ref (get-light-state bridge-status light-number) 'bri))
          (cons 'briChange #f))
         (else
          (cons 'briChange #t)))
       (cond
-        ((equal? (hash-ref (send hueObject get-state) 'hue)
-                 (hash-ref (get-light-state lightNumber address user-name) 'hue))
+        ((equal? (hash-ref (send hue-object get-state) 'hue)
+                 (hash-ref (get-light-state bridge-status light-number) 'hue))
          (cons 'hueChange #f))
         (else
          (cons 'hueChange #t)))
       (cond
-        ((equal? (hash-ref (send hueObject get-state) 'sat)
-                 (hash-ref (get-light-state lightNumber address user-name) 'sat))
+        ((equal? (hash-ref (send hue-object get-state) 'sat)
+                 (hash-ref (get-light-state bridge-status light-number) 'sat))
          (cons 'satChange #f))
         (else
          (cons 'satChange #t)))))))
@@ -152,10 +152,10 @@
     (list (cons key (hash-ref (send hue-object get-state) key)))))
 
 (define create-hash-for-bridge
-  (lambda (hue-object light-number address user-name)
+  (lambda (hue-object bridge-status light-number)
     (make-hash
      (append
-      (hash->list (compare-light-state hue-object light-number address user-name))
+      (hash->list (compare-light-state hue-object bridge-status light-number))
       (wanted-state->list 'on hue-object)
       (wanted-state->list 'bri hue-object)
       (wanted-state->list 'hue hue-object)
@@ -274,6 +274,7 @@
                         #:content-decode '(json))])
            (read-json jsonResponse))))
       (else
+       (let ([bridge-status (retrieve-bridge-status address user-name)])
        (for/list ([i (in-range (length lights))])
          (when (> i 1) (sleep .01))
          (let ([state
@@ -281,12 +282,11 @@
                  (list-ref
                   (send patch get-children)
                   (- (list-ref lights i) 1))
+                 bridge-status
                  (send (list-ref
                         (send patch get-children)
                         (- (list-ref lights i) 1))
-                       get-bulb)
-                 address
-                 user-name)])
+                       get-bulb))])
            (let-values ([(httpStatus httpHeader jsonResponse)
                          (http-sendrecv
                           address (string-append
@@ -304,7 +304,7 @@
                           #:headers
                           '("Content-Type: application/json")
                           #:content-decode '(json))])
-             (read-json jsonResponse))))))))
+             (read-json jsonResponse)))))))))
 
 ; Procedure to update information about lighting state of every light.
 ; It pulls its data from the bridge.
@@ -411,7 +411,7 @@
 ; Procedure for getting the current status of the bridge. This is used to
 ; save the current state as a cue.
 
-(define retrieveBridgeStatus
+(define retrieve-bridge-status
   (lambda (address user-name)
     (let-values ([(httpStatus httpHeader jsonResponse)
                   (http-sendrecv
