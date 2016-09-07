@@ -23,7 +23,7 @@
          update-all-lights)
 
 ;; Provide Cue Manipulation.
-(provide retrieveBridgeStatus
+(provide retrieve-bridge-status
          restore-cue
          delete-cue
          resort-cue-choice

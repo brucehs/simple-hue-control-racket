@@ -242,7 +242,7 @@
                                             [number new-cue-number]
                                             [label new-cue-name]
                                             [parent primary-cue-list]
-                                            [json-value (retrieveBridgeStatus
+                                            [json-value (retrieve-bridge-status
                                                          bridge-address
                                                          hue-user-name)]
                                             [time (* new-cue-time 10)])
