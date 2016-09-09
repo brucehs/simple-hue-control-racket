@@ -224,7 +224,7 @@
 
 (define hashForJson
   (lambda (state time)
-    (make-immutable-hash
+    (make-hash
      (list
       (cond
         ((equal? (hash-ref state 'onChange) #t) (cons 'on (hash-ref state 'on)))
@@ -246,7 +246,7 @@
 (define makeJsonCommand
   (lambda (state time)
     (let ([hashCommand (hashForJson state time)])
-      (cond ((hash-has-key? hashCommand '()) (hash-remove hashCommand '())))
+      (cond ((hash-has-key? hashCommand '()) (hash-remove! hashCommand '())))
       (jsexpr->string hashCommand))))
 
 ;; Procedure for sending a a lighting state to the Bridge.
