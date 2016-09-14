@@ -164,7 +164,7 @@
 ;; Procedure for Restoring Cue
 
 (define compare-light-state-in-cue
-  (lambda (cue-list cue-number light-number address user-name)
+  (lambda (cue-list cue-number bridge-status light-number)
     (let ([cue-light-state
            (hash-ref
             (hash-ref
@@ -176,30 +176,30 @@
         (cond
           ((equal?
             (hash-ref cue-light-state 'on)
-            (hash-ref (get-light-state light-number address user-name) 'on))
+            (hash-ref (get-light-state bridge-status light-number) 'on))
            (cons 'onChange #f))
           (else (cons 'onChange #t)))
         (cond
           ((equal?
             (hash-ref cue-light-state 'bri)
-            (hash-ref (get-light-state light-number address user-name) 'bri))
+            (hash-ref (get-light-state bridge-status light-number) 'bri))
            (cons 'briChange #f))
           (else (cons 'briChange #t)))
         (cond
           ((equal?
             (hash-ref cue-light-state 'hue)
-            (hash-ref (get-light-state light-number address user-name) 'hue))
+            (hash-ref (get-light-state bridge-status light-number) 'hue))
            (cons 'hueChange #f))
           (else (cons 'hueChange #t)))
         (cond
           ((equal?
             (hash-ref cue-light-state 'sat)
-            (hash-ref (get-light-state light-number address user-name)'sat))
+            (hash-ref (get-light-state bridge-status light-number)'sat))
            (cons 'satChange #f))
           (else (cons 'satChange #t))))))))
 
 (define create-restore-hash-for-bridge
-  (lambda (cue-list cue-number light-number address user-name)
+  (lambda (cue-list cue-number bridge-status light-number)
     (let ([cue-light-state
            (hash-ref
             (hash-ref
@@ -211,9 +211,8 @@
         (hash->list (compare-light-state-in-cue
                      cue-list
                      cue-number
-                     light-number
-                     address
-                     user-name))
+                     bridge-status
+                     light-number))
         (list (cons 'on (hash-ref cue-light-state 'on)))
         (list (cons 'bri (hash-ref cue-light-state 'bri)))
         (list (cons 'hue (hash-ref cue-light-state 'hue)))
@@ -440,32 +439,33 @@
 ; json commands with just the changed values.
 
 (define restore-cue
-  (lambda (cue-list cue-number number-of-lights address user-name)
-    (for/list ([i (in-range 1 number-of-lights)])
-      (when (> i 1) (sleep .01))
-      (let ([lightState
-             (create-restore-hash-for-bridge
-              cue-list
-              cue-number
-              i
-              address
-              user-name)])
-        (let ([time (send (list-ref (send cue-list get-children) cue-number) get-time)])
-          (let-values ([(httpStatus httpHeader jsonResponse)
-                        (http-sendrecv
-                         address (string-append
-                                  "/api/"
-                                  user-name
-                                  "/lights/"
-                                  (number->string i)
-                                  "/state")
-                         #:method 'PUT
-                         #:data
-                         (makeJsonCommand lightState time)
-                         #:headers
-                         '("Content-Type: application/json")
-                         #:content-decode '(json))])
-            (read-json jsonResponse)))))))
+  (lambda (cue-list cue-number number-of-lights patch address user-name)
+    (let ([bridge-status (retrieve-bridge-status address user-name)])
+      (for/list ([i (in-range 1 number-of-lights)])
+                (let ([bulb (send (list-ref (send patch get-children) (- i 1)) get-bulb)])
+                  (when (> i 1) (sleep .01))
+                  (let ([lightState
+                         (create-restore-hash-for-bridge
+                          cue-list
+                          cue-number
+                          bridge-status
+                          bulb)])
+                    (let ([time (send (list-ref (send cue-list get-children) cue-number) get-time)])
+                      (let-values ([(httpStatus httpHeader jsonResponse)
+                                    (http-sendrecv
+                                     address (string-append
+                                              "/api/"
+                                              user-name
+                                              "/lights/"
+                                              (number->string bulb)
+                                              "/state")
+                                     #:method 'PUT
+                                     #:data
+                                     (makeJsonCommand lightState time)
+                                     #:headers
+                                     '("Content-Type: application/json")
+                                     #:content-decode '(json))])
+                        (read-json jsonResponse)))))))))
 
 ; I believe the cue% object remains. I am unsure how to mark it
 ; for Garbage Collection.

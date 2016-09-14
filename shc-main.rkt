@@ -367,6 +367,7 @@
                                                          primary-cue-list 
                                                          (send cue-list-display get-selection) 
                                                          range-of-lights
+                                                         primary-patch
                                                          bridge-address
                                                          hue-user-name)))]
                                              [thrd-2
