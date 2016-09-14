@@ -307,7 +307,7 @@
 ; Finally we need a window to show the status of all the lights.
 ; This Window gets its data from the bridge.
 
-(define light-status-window (new shc-frame% [label "All Lights"]
+(define light-status-window (new shc-frame% [label "Channel Table"]
                        [min-width 1000]))
 
 (create-status-boxes light-status-window number-of-lights)
